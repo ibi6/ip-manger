@@ -1,0 +1,40 @@
+# Python
+backend/.venv/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/ipam.db
+backend/*.db
+backend/.env
+backend/.secret_key
+backend/uvicorn.*.log
+backend/.pytest_cache/
+backend/**/.pytest_cache/
+*.egg-info/
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker / secrets
+.env
+
+# Local review drafts (optional private notes)
+docs/*审查*.md
+docs/*通关*.md
