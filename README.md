@@ -1,152 +1,155 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" width="88" alt="NetLedger logo" />
+  <img src="docs/assets/logo.svg" width="88" alt="NetLedger Logo" />
 </p>
 
-<h1 align="center">NetLedger</h1>
+<h1 align="center">NetLedger · 企业 IP 地址管理系统</h1>
 
 <p align="center">
-  <b>Enterprise-grade IP Address Management — without the enterprise tax.</b><br/>
-  Operational clarity for every IPv4 address: pool · allocate · reclaim · audit.
+  <b>轻量级 IPAM：子网规划 · 地址分配 · 回收审计 · 设备台账</b><br/>
+  用结构化台账替代 Excel，让内网 IPv4 可管、可查、可追溯
 </p>
 
 <p align="center">
   <a href="https://github.com/ibi6/ip-manger/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ibi6/ip-manger/actions/workflows/ci.yml/badge.svg" /></a>
   <img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" />
-  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-Async%20API-009688?logo=fastapi&logoColor=white" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-异步接口-009688?logo=fastapi&logoColor=white" />
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
-  <img alt="PRs" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" />
+  <img alt="PRs" src="https://img.shields.io/badge/PRs-欢迎-brightgreen.svg" />
 </p>
 
 <p align="center">
-  <img src="docs/assets/banner.svg" width="100%" alt="NetLedger banner" />
+  <img src="docs/assets/banner.svg" width="100%" alt="NetLedger 项目横幅" />
 </p>
 
 <p align="center">
-  <a href="#-why-netledger">Why</a> ·
-  <a href="#-features">Features</a> ·
-  <a href="#-architecture">Architecture</a> ·
-  <a href="#-quick-start">Quick Start</a> ·
-  <a href="#-api">API</a> ·
-  <a href="#-security">Security</a> ·
-  <a href="#-roadmap">Roadmap</a> ·
-  <a href="#-faq">FAQ</a>
+  <a href="#-为什么需要">为什么需要</a> ·
+  <a href="#-功能矩阵">功能</a> ·
+  <a href="#-技术架构">架构</a> ·
+  <a href="#-快速开始">快速开始</a> ·
+  <a href="#-api-文档">API</a> ·
+  <a href="#-安全说明">安全</a> ·
+  <a href="#-路线图">路线图</a> ·
+  <a href="#-常见问题">FAQ</a>
 </p>
 
 ---
 
-## 🎯 Why NetLedger
+## 🎯 为什么需要
 
-Most small networks still track IPs in **Excel**. That works until:
+很多中小网络仍用 **Excel** 管 IP，常见问题：
 
-- two people get the same address  
-- leavers never release space  
-- nobody knows what `/24` utilization really is  
-- audits ask “who changed this last month?”
+- 同一地址分给两个人  
+- 离职/下线后地址不回收  
+- 不清楚某段 `/24` 还剩多少  
+- 审计时说不清「谁改过」
 
-**NetLedger** is a lightweight **IPAM control plane**: structured status, safe lifecycle operations, RBAC, and audit logs — runnable in minutes on a laptop or in Docker.
+**NetLedger** 是一套轻量 **IP 地址管理（IPAM）** 系统：状态清晰、流程可控、操作可审计，笔记本几分钟即可跑起来。
 
-| | Spreadsheets | Heavy commercial IPAM | **NetLedger** |
-|--|--------------|----------------------|---------------|
-| Time to first value | Fast | Slow | **Minutes** |
-| Lifecycle + audit | Manual | Strong | **Built-in** |
-| Cost | Free | High | **Open source** |
-| Honest scope | — | Full suite | **Inventory-first IPAM** |
+| 对比 | Excel | 重型商业 IPAM | **NetLedger** |
+|------|-------|---------------|---------------|
+| 上手时间 | 快 | 慢 | **分钟级** |
+| 生命周期 + 审计 | 靠人 | 强 | **内置** |
+| 成本 | 低 | 高 | **开源免费** |
+| 定位 | 表格 | 全家桶 | **台账型 IPAM，边界诚实** |
 
-> Product positioning (users, scenarios, differentiation): [`docs/PRODUCT.md`](docs/PRODUCT.md)
-
----
-
-## ✨ Features
-
-### Capability matrix
-
-| Domain | Capabilities |
-|--------|----------------|
-| **Identity** | JWT auth · 4 roles · password change · login rate limit |
-| **Topology** | Sites · subnets (CIDR) · auto host-pool generation |
-| **Lifecycle** | allocate · reserve · release · disable · enable · allocate-next |
-| **Safety** | Gateway/broadcast lock · conditional allocate · archive-first subnet delete |
-| **Assets** | Device inventory · MAC uniqueness · bind device on allocate |
-| **Operations** | Dashboard KPIs · audit logs · conflict records · CSV import/export |
-| **Platform** | OpenAPI `/docs` · Docker Compose · pytest · GitHub Actions CI |
-
-### Roles
-
-| Role | Typical access |
-|------|----------------|
-| `admin` | Full control including users & departments |
-| `network_admin` | Subnets, IP ops, devices, conflicts |
-| `dept_user` | Allocate free IPs in own department scope |
-| `viewer` | Read-mostly |
+产品定位详见：[docs/PRODUCT.md](docs/PRODUCT.md)
 
 ---
 
-## 🧱 Tech stack
+## ✨ 功能矩阵
 
-<p>
-  <img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
-  <img src="https://img.shields.io/badge/ORM-SQLAlchemy%202-D71F00?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Frontend-React%2019-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
-  <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/DB-SQLite%20%7C%20MySQL-003B57?style=for-the-badge&logo=sqlite&logoColor=white" />
-  <img src="https://img.shields.io/badge/Auth-JWT%20%2B%20bcrypt-000000?style=for-the-badge" />
-</p>
+| 领域 | 能力 |
+|------|------|
+| **认证权限** | JWT 登录 · 四角色 · 修改密码 · 登录限流 |
+| **拓扑规划** | 站点 · 子网（CIDR）· 自动生成地址池 |
+| **地址生命周期** | 分配 · 预留 · 回收 · 禁用 · 启用 · 一键下一空闲 |
+| **安全机制** | 网关/广播锁定 · 条件更新防双分配 · 子网先归档 |
+| **资产** | 设备台账 · MAC 唯一 · 分配时绑定设备 |
+| **运维** | 看板统计 · 操作日志 · 冲突记录 · CSV 导入导出 |
+| **工程** | OpenAPI `/docs` · Docker Compose · pytest · GitHub Actions |
+
+### 角色一览
+
+| 角色 | 说明 |
+|------|------|
+| `admin` | 全部权限（含用户/部门） |
+| `network_admin` | 子网、地址操作、设备、冲突 |
+| `dept_user` | 本部门范围可分配空闲地址 |
+| `viewer` | 以只读为主 |
 
 ---
 
-## 🏗 Architecture
+## 🧱 技术栈
+
+| 层级 | 技术 |
+|------|------|
+| 后端 | **Python 3.11+** · FastAPI · SQLAlchemy 2 · JWT · bcrypt |
+| 前端 | **React 19** · TypeScript · Vite · Tailwind CSS |
+| 数据 | 演示 **SQLite**，可迁 **MySQL / PostgreSQL**（见 `docs/schema.sql`） |
+| 部署 | Docker Compose · Nginx 反代前端 |
+| 质量 | pytest · GitHub Actions CI |
+
+> 后端核心是 **Python**；前端是 React SPA。写介绍请按此表，勿写 Flask / Bootstrap。
+
+---
+
+## 🏗 技术架构
 
 ```text
-Browser (React SPA)
+浏览器 (React SPA)
         │  JWT Bearer
         ▼
-   FastAPI routers  ──►  domain services  ──►  SQLAlchemy
-        │                      │
-        │                      ├─ CIDR pool generation
-        │                      ├─ lifecycle + audit log
-        │                      └─ stats aggregation
+   FastAPI 路由层  ──►  领域服务层  ──►  SQLAlchemy
+        │                    │
+        │                    ├─ CIDR 地址池生成
+        │                    ├─ 分配/回收 + 审计日志
+        │                    └─ 统计聚合
         ▼
-   SQLite (demo) / MySQL / PostgreSQL
+   SQLite（演示）/ MySQL / PostgreSQL
 ```
 
-Deep dive: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+详细说明：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ---
 
-## 🖼 Screens
+## 🖼 界面入口
 
-| Area | Route |
-|------|--------|
-| Login | `/login` |
-| Operations dashboard | `/` |
-| Subnet & live pool | `/subnets/:id` |
-| Address ledger (page + batch) | `/addresses` |
-| Devices | `/devices` |
-| Audit log | `/logs` |
-| Admin users | `/users` |
-
-> Tip for maintainers: add a short GIF under `docs/assets/demo.gif` and embed it here for instant social proof.
+| 页面 | 路径 |
+|------|------|
+| 登录 | `/login` |
+| 工作台 | `/` |
+| 子网与地址池 | `/subnets`、`/subnets/:id` |
+| 地址台账（分页/批量回收） | `/addresses` |
+| 设备台账 | `/devices` |
+| 操作日志 | `/logs` |
+| 用户管理 | `/users`（管理员） |
+| 设置 / 改密 / CSV | `/settings` |
 
 ---
 
-## 🚀 Quick start
+## 🚀 快速开始
 
-### Option A — Local (recommended for development)
+### 方式 A：本地开发
 
-**API**
+**1. 启动后端**
 
 ```bash
 cd backend
 python -m venv .venv
-# Windows: .\.venv\Scripts\activate
-source .venv/bin/activate   # macOS / Linux
+
+# Windows
+.\.venv\Scripts\activate
+
+# macOS / Linux
+# source .venv/bin/activate
+
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-**UI**
+**2. 启动前端**
 
 ```bash
 cd frontend
@@ -154,56 +157,58 @@ npm install
 npm run dev
 ```
 
-| Service | URL |
-|---------|-----|
-| Web app | http://localhost:5173 (or port printed by Vite) |
-| Swagger | http://127.0.0.1:8000/docs |
-| Health | http://127.0.0.1:8000/health |
+| 服务 | 地址 |
+|------|------|
+| 前端页面 | 终端打印的地址（常见 `http://localhost:5173`） |
+| 接口文档 | http://127.0.0.1:8000/docs |
+| 健康检查 | http://127.0.0.1:8000/health |
 
-### Option B — Docker Compose
+### 方式 B：Docker 一键
 
 ```bash
 docker compose up --build
 ```
 
-| Service | URL |
-|---------|-----|
+| 服务 | 地址 |
+|------|------|
 | Web | http://localhost |
-| API | http://localhost:8000/docs |
+| API 文档 | http://localhost:8000/docs |
 
-### Option C — Makefile
+### 方式 C：Makefile
 
 ```bash
 make install
 make test
-make backend   # terminal 1
-make frontend  # terminal 2
+make backend    # 终端 1
+make frontend   # 终端 2
 ```
 
-### Demo accounts
+### 演示账号
 
-| User | Password | Role |
-|------|----------|------|
-| `admin` | `ChangeMe123!` | Administrator |
-| `netadmin` | `ChangeMe123!` | Network admin |
-| `biz` | `ChangeMe123!` | Department user |
-| `viewer` | `ChangeMe123!` | Read-only |
+| 用户名 | 密码 | 角色 |
+|--------|------|------|
+| `admin` | `ChangeMe123!` | 系统管理员 |
+| `netadmin` | `ChangeMe123!` | 网络管理员 |
+| `biz` | `ChangeMe123!` | 部门用户 |
+| `viewer` | `ChangeMe123!` | 只读 |
+
+> 仅用于演示，正式环境请立刻修改密码并配置强 `SECRET_KEY`。
 
 ---
 
-## 📡 API
+## 📡 API 文档
 
-Full interactive contract: **OpenAPI at `/docs`**.  
-Human overview: [`docs/API.md`](docs/API.md)
+- 交互式文档：**Swagger** → `/docs`  
+- 文字说明：[docs/API.md](docs/API.md)
 
 ```bash
-# login
+# 登录示例
 curl -s -X POST http://127.0.0.1:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"ChangeMe123!"}'
+  -d "{\"username\":\"admin\",\"password\":\"ChangeMe123!\"}"
 ```
 
-Core mutations:
+常用写操作：
 
 ```http
 POST /api/v1/ip-addresses/{id}/allocate
@@ -215,79 +220,80 @@ POST /api/v1/subnets/{id}/archive
 
 ---
 
-## 🚢 Deployment notes
+## 🚢 部署说明
 
-| Environment | Guidance |
-|-------------|----------|
-| **Demo / lab** | SQLite file + Compose is enough |
-| **Team internal** | Put TLS in front (Caddy/Nginx), set `SECRET_KEY`, lock CORS |
-| **Production path** | Postgres/MySQL, managed secrets, backups, no default passwords |
+| 场景 | 建议 |
+|------|------|
+| 演示 / 实验 | SQLite + Compose 即可 |
+| 小团队内网 | 前置 HTTPS，配置 `SECRET_KEY`，收紧 CORS |
+| 生产方向 | 换 MySQL/Postgres，密钥托管，备份库，关闭默认演示账号 |
 
-Config template: [`backend/.env.example`](backend/.env.example)  
-Schema reference: [`docs/schema.sql`](docs/schema.sql)
+配置模板：[`backend/.env.example`](backend/.env.example)  
+表结构：[`docs/schema.sql`](docs/schema.sql)
 
 ```env
 APP_ENV=production
-SECRET_KEY=<generate-a-long-random-string>
-DATABASE_URL=postgresql+psycopg2://netledger:********@db:5432/netledger
-CORS_ORIGINS=https://ipam.example.com
+SECRET_KEY=<请换成足够长的随机串>
+DATABASE_URL=postgresql+psycopg2://user:pass@db:5432/netledger
+CORS_ORIGINS=https://你的域名
 ```
 
 ---
 
-## 📊 Performance notes (design targets)
+## 📊 性能说明（设计目标）
 
-| Metric | Target (lab hardware) |
-|--------|------------------------|
-| List page (paginated) | Interactive on tens of thousands of rows with filters |
-| Allocate under concurrency | Safe via conditional `UPDATE` (no double free→allocated race) |
-| Subnet materialization | Bounded expansion (guards against huge prefixes) |
-| Dashboard stats | Aggregations batched to avoid N+1 |
+| 指标 | 说明 |
+|------|------|
+| 地址列表 | 支持分页查询，避免一次拉全表到前端 |
+| 并发分配 | `UPDATE ... WHERE status='free'`，降低双人抢同一 IP |
+| 子网展开 | 对超大前缀做规模限制，防止一次插入过多 |
+| 看板统计 | 批量聚合，减少 N+1 |
 
-> Numbers vary by disk and DB engine; SQLite is for demo, not multi-writer HA.
-
----
-
-## 🗺 Roadmap
-
-- [x] IP lifecycle + RBAC + devices + audit  
-- [x] Conditional allocate, batch release, subnet archive  
-- [x] CI, Docker, security policy, product docs  
-- [ ] Public demo environment + demo GIF  
-- [ ] GHCR container publish  
-- [ ] Discovery adapter interface (import ARP/Nmap results)  
-- [ ] Optional OIDC login  
-- [ ] First-class PostgreSQL compose profile  
+具体数值随机器与数据库变化；SQLite 适合演示，不适合高并发多写。
 
 ---
 
-## ❓ FAQ
+## 🗺 路线图
 
-**Is this a full Infoblox replacement?**  
-No. NetLedger is a **lightweight inventory IPAM**. It optimizes for clarity and speed-to-deploy, not global DDI.
-
-**Is conflict scan real network probing?**  
-No. `simulate-scan` generates demo conflict records so operators can practice resolution workflows.
-
-**Can I use MySQL?**  
-Yes. Schema samples are in `docs/schema.sql`. Point `DATABASE_URL` at MySQL/Postgres for multi-user deployments.
-
-**Is the backend Python?**  
-Yes — **Python + FastAPI** is the system of record. The UI is a React SPA.
-
-**Is this only a student project?**  
-It started as a serious full-stack IPAM implementation and is packaged as a maintainable open-source product. Use it for learning, labs, or as a foundation for internal tools.
+- [x] 地址生命周期 + RBAC + 设备 + 审计  
+- [x] 条件分配、批量回收、子网归档  
+- [x] CI、Docker、安全策略、产品化文档  
+- [ ] 在线演示环境 + 演示动图  
+- [ ] 发布容器镜像到 GHCR  
+- [ ] 探测结果导入适配器（ARP/Nmap 结果入库）  
+- [ ] 可选 OIDC 登录  
+- [ ] PostgreSQL 默认 Compose 配置  
 
 ---
 
-## 📁 Repository layout
+## ❓ 常见问题
+
+**这是不是毕设作业仓库？**  
+实现上是完整的全栈 IPAM 应用，并按开源产品方式做了文档与工程规范。可用于学习、实验室和内网台账起步。
+
+**后端是不是 Python？**  
+是。**业务与 API 基于 Python + FastAPI**；页面是 React。
+
+**冲突扫描是真扫网吗？**  
+不是。`simulate-scan` 只生成演示用冲突记录，方便走处理流程。
+
+**能上 MySQL 吗？**  
+可以。参考 `docs/schema.sql`，修改 `DATABASE_URL` 即可。
+
+**能替代 Infoblox 吗？**  
+不能对标完整商业 DDI。NetLedger 定位是 **轻量台账型 IPAM**，先解决「看得见、管得住、留得下痕」。
+
+---
+
+## 📁 目录结构
 
 ```text
-netledger/
-├── backend/                 # FastAPI application + pytest
-├── frontend/                # React SPA
-├── docs/                    # Product, architecture, schema
-├── .github/workflows/       # CI
+.
+├── backend/              # FastAPI + pytest
+├── frontend/             # React SPA
+├── docs/                 # 产品/架构/API/库表
+│   └── assets/           # Logo、Banner
+├── .github/workflows/    # CI
 ├── docker-compose.yml
 ├── Makefile
 └── README.md
@@ -295,21 +301,21 @@ netledger/
 
 ---
 
-## 🤝 Contributing
+## 🤝 参与贡献
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).  
-Security reports: [SECURITY.md](SECURITY.md).  
-Changes: [CHANGELOG.md](CHANGELOG.md).
+请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 与 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。  
+安全问题请看 [SECURITY.md](SECURITY.md)。  
+版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
 ## 📄 License
 
-[MIT](LICENSE) © 2026 NetLedger contributors
+[MIT](LICENSE) © NetLedger 贡献者
 
 ---
 
 <p align="center">
-  <b>NetLedger</b> — stop managing production IPs in spreadsheets.<br/>
-  Star the repo if it saves you an afternoon of Excel archaeology.
+  <b>NetLedger</b> — 别再用表格硬管生产网 IP。<br/>
+  如果对你有帮助，欢迎 Star ⭐
 </p>
