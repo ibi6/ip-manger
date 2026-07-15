@@ -1,0 +1,56 @@
+# Changelog
+
+All notable changes to **NetLedger** are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [1.5.0] - 2026-07-15
+
+### Added
+- Address list pagination (`/ip-addresses/page`) and UI paging
+- Batch IP release API and multi-select UI
+- Subnet soft-archive / restore workflow
+- Department create API (admin)
+- Device MAC uniqueness enforcement
+- Reserve with optional remark
+
+### Changed
+- Subnet delete defaults to archive-first safety
+
+## [1.4.1] - 2026-07-15
+
+### Added
+- Device edit UI, device CSV export
+- Full allocate dialog on address detail (device binding)
+
+## [1.4.0] - 2026-07-15
+
+### Added
+- Disable / enable IP lifecycle
+- Allocate-next free address per subnet
+- Change-password endpoint and settings UI
+- Request access logging middleware + `X-Request-ID`
+
+## [1.3.x] - 2026-07-15
+
+### Added
+- Device inventory module
+- Operation logs page
+- User administration
+- SQLite schema migrate helper
+
+## [1.2.0] - 2026-07-15
+
+### Added
+- Login rate limiting
+- Conditional allocate (concurrency-safe)
+- Secret key production guards
+- pytest suite foundation
+- Alembic baseline migration
+
+## [1.0.0] - 2026-07-15
+
+### Added
+- Initial IPAM: sites, subnets, IP pool generation, allocate/release
+- JWT RBAC, dashboard, conflicts (simulate), CSV, Docker Compose

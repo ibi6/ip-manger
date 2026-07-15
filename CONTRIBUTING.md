@@ -1,25 +1,53 @@
-# Contributing
+# Contributing to NetLedger
 
-Thanks for your interest in improving this project.
+Thanks for helping improve **NetLedger**, a lightweight IP address management platform.
 
-## Development
+## Development setup
 
-1. Fork & clone the repository  
-2. Start backend and frontend (see [README](README.md))  
-3. Run tests before opening a PR:
+```bash
+# API
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # Windows: .\.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+
+# UI
+cd frontend
+npm install
+npm run dev
+```
+
+Or: `make install` then `make backend` / `make frontend`.
+
+## Quality bar
+
+Before opening a PR:
 
 ```bash
 cd backend && pytest tests -q
 cd frontend && npm run build
 ```
 
-## Guidelines
+Optional (if ruff installed):
 
-- Keep commits focused and messages clear  
-- Prefer small PRs with a short description of *why*  
-- Do not commit secrets, `.env`, or `*.db` files  
-- Match existing code style (Python type hints, TS strict)  
+```bash
+cd backend && ruff check app
+```
 
-## Scope
+## Pull requests
 
-This is primarily a **learning / demo IPAM**. Large product features (real Nmap scanning, multi-tenant SaaS, full DHCP) should be discussed in an issue first.
+1. Fork and branch from `main`  
+2. Keep changes focused  
+3. Update `CHANGELOG.md` under `[Unreleased]` when behavior changes  
+4. Fill the PR template  
+
+## Project principles
+
+- Prefer clear domain services over clever abstractions  
+- Keep product claims honest (no fake “AI discovery”)  
+- Never commit secrets, `.env`, or database files  
+
+## Security
+
+Report vulnerabilities privately — see [SECURITY.md](SECURITY.md).

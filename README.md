@@ -1,103 +1,152 @@
 <p align="center">
-  <img src="frontend/public/favicon.svg" width="72" height="72" alt="logo" />
+  <img src="docs/assets/logo.svg" width="88" alt="NetLedger logo" />
 </p>
 
-<h1 align="center">企业 IP 地址管理系统</h1>
+<h1 align="center">NetLedger</h1>
 
 <p align="center">
-  <b>Enterprise IP Address Management (IPAM)</b><br/>
-  轻量、可演示、可扩展的内网 IPv4 地址全生命周期管理平台
+  <b>Enterprise-grade IP Address Management — without the enterprise tax.</b><br/>
+  Operational clarity for every IPv4 address: pool · allocate · reclaim · audit.
 </p>
 
 <p align="center">
+  <a href="https://github.com/ibi6/ip-manger/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ibi6/ip-manger/actions/workflows/ci.yml/badge.svg" /></a>
   <img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" />
-  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-Async%20API-009688?logo=fastapi&logoColor=white" />
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
-  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-Ready-003B57?logo=sqlite&logoColor=white" />
-  <img alt="Tests" src="https://img.shields.io/badge/pytest-32%20passed-success" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
+  <img alt="PRs" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" />
 </p>
 
 <p align="center">
+  <img src="docs/assets/banner.svg" width="100%" alt="NetLedger banner" />
+</p>
+
+<p align="center">
+  <a href="#-why-netledger">Why</a> ·
   <a href="#-features">Features</a> ·
   <a href="#-architecture">Architecture</a> ·
   <a href="#-quick-start">Quick Start</a> ·
   <a href="#-api">API</a> ·
   <a href="#-security">Security</a> ·
-  <a href="#-screenshots">Screens</a>
+  <a href="#-roadmap">Roadmap</a> ·
+  <a href="#-faq">FAQ</a>
 </p>
+
+---
+
+## 🎯 Why NetLedger
+
+Most small networks still track IPs in **Excel**. That works until:
+
+- two people get the same address  
+- leavers never release space  
+- nobody knows what `/24` utilization really is  
+- audits ask “who changed this last month?”
+
+**NetLedger** is a lightweight **IPAM control plane**: structured status, safe lifecycle operations, RBAC, and audit logs — runnable in minutes on a laptop or in Docker.
+
+| | Spreadsheets | Heavy commercial IPAM | **NetLedger** |
+|--|--------------|----------------------|---------------|
+| Time to first value | Fast | Slow | **Minutes** |
+| Lifecycle + audit | Manual | Strong | **Built-in** |
+| Cost | Free | High | **Open source** |
+| Honest scope | — | Full suite | **Inventory-first IPAM** |
+
+> Product positioning (users, scenarios, differentiation): [`docs/PRODUCT.md`](docs/PRODUCT.md)
 
 ---
 
 ## ✨ Features
 
-| Module | Capabilities |
+### Capability matrix
+
+| Domain | Capabilities |
 |--------|----------------|
-| **Auth & RBAC** | JWT login, 4 roles, login rate-limit, change password |
-| **Sites / Subnets** | CIDR validation, auto IP pool generation, archive safety |
-| **IP Lifecycle** | allocate · reserve · release · disable · enable · allocate-next |
-| **Concurrency** | Conditional `UPDATE … WHERE status='free'` to avoid double-assign |
-| **Devices** | Device inventory, MAC uniqueness, bind on allocate, CSV export |
-| **Ops** | Audit logs, conflict records (simulate scan), dashboard stats |
-| **Admin** | User CRUD, departments, CSV import/export |
-| **DX** | OpenAPI `/docs`, Docker Compose, pytest suite |
+| **Identity** | JWT auth · 4 roles · password change · login rate limit |
+| **Topology** | Sites · subnets (CIDR) · auto host-pool generation |
+| **Lifecycle** | allocate · reserve · release · disable · enable · allocate-next |
+| **Safety** | Gateway/broadcast lock · conditional allocate · archive-first subnet delete |
+| **Assets** | Device inventory · MAC uniqueness · bind device on allocate |
+| **Operations** | Dashboard KPIs · audit logs · conflict records · CSV import/export |
+| **Platform** | OpenAPI `/docs` · Docker Compose · pytest · GitHub Actions CI |
 
-### Role matrix (simplified)
+### Roles
 
-| Role | Read | Allocate | Release / Archive | Users |
-|------|------|----------|-------------------|-------|
-| `admin` | ✅ | ✅ | ✅ | ✅ |
-| `network_admin` | ✅ | ✅ | ✅ | — |
-| `dept_user` | own dept | own dept free IPs | — | — |
-| `viewer` | ✅ | — | — | — |
+| Role | Typical access |
+|------|----------------|
+| `admin` | Full control including users & departments |
+| `network_admin` | Subnets, IP ops, devices, conflicts |
+| `dept_user` | Allocate free IPs in own department scope |
+| `viewer` | Read-mostly |
+
+---
+
+## 🧱 Tech stack
+
+<p>
+  <img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/ORM-SQLAlchemy%202-D71F00?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Frontend-React%2019-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/DB-SQLite%20%7C%20MySQL-003B57?style=for-the-badge&logo=sqlite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Auth-JWT%20%2B%20bcrypt-000000?style=for-the-badge" />
+</p>
 
 ---
 
 ## 🏗 Architecture
 
 ```text
-┌──────────────┐     JWT + REST      ┌─────────────────┐
-│  React SPA   │ ──────────────────► │  FastAPI (v1)   │
-│  Vite + TS   │ ◄────────────────── │  SQLAlchemy 2   │
-└──────────────┘                     └────────┬────────┘
-                                              │
-                                     ┌────────▼────────┐
-                                     │ SQLite / MySQL  │
-                                     │  (schema.sql)   │
-                                     └─────────────────┘
+Browser (React SPA)
+        │  JWT Bearer
+        ▼
+   FastAPI routers  ──►  domain services  ──►  SQLAlchemy
+        │                      │
+        │                      ├─ CIDR pool generation
+        │                      ├─ lifecycle + audit log
+        │                      └─ stats aggregation
+        ▼
+   SQLite (demo) / MySQL / PostgreSQL
 ```
 
-**Backend layers:** `api` → `services` → `models`  
-**Key domain logic:** `app/services/ip_utils.py`, `ip_service.py`, `subnet_service.py`
+Deep dive: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
 ---
 
-## 🚀 Quick Start
+## 🖼 Screens
 
-### Prerequisites
+| Area | Route |
+|------|--------|
+| Login | `/login` |
+| Operations dashboard | `/` |
+| Subnet & live pool | `/subnets/:id` |
+| Address ledger (page + batch) | `/addresses` |
+| Devices | `/devices` |
+| Audit log | `/logs` |
+| Admin users | `/users` |
 
-- Python 3.11+
-- Node.js 20+
-- (Optional) Docker
+> Tip for maintainers: add a short GIF under `docs/assets/demo.gif` and embed it here for instant social proof.
 
-### 1) Backend
+---
+
+## 🚀 Quick start
+
+### Option A — Local (recommended for development)
+
+**API**
 
 ```bash
 cd backend
 python -m venv .venv
-
-# Windows
-.\.venv\Scripts\activate
-
+# Windows: .\.venv\Scripts\activate
+source .venv/bin/activate   # macOS / Linux
 pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-- API docs: http://127.0.0.1:8000/docs  
-- Health: http://127.0.0.1:8000/health  
-
-### 2) Frontend
+**UI**
 
 ```bash
 cd frontend
@@ -105,160 +154,162 @@ npm install
 npm run dev
 ```
 
-Open the URL shown in terminal (e.g. http://localhost:5173).
+| Service | URL |
+|---------|-----|
+| Web app | http://localhost:5173 (or port printed by Vite) |
+| Swagger | http://127.0.0.1:8000/docs |
+| Health | http://127.0.0.1:8000/health |
 
-### 3) Docker (one command)
+### Option B — Docker Compose
 
 ```bash
 docker compose up --build
 ```
 
-- Web: http://localhost  
-- API: http://localhost:8000/docs  
+| Service | URL |
+|---------|-----|
+| Web | http://localhost |
+| API | http://localhost:8000/docs |
 
-### 4) Tests
+### Option C — Makefile
 
 ```bash
-cd backend
-pytest tests -q
+make install
+make test
+make backend   # terminal 1
+make frontend  # terminal 2
 ```
 
----
+### Demo accounts
 
-## 🔐 Demo accounts
-
-| Username | Role | Password |
-|----------|------|----------|
-| `admin` | Administrator | `ChangeMe123!` |
-| `netadmin` | Network admin | `ChangeMe123!` |
-| `biz` | Department user | `ChangeMe123!` |
-| `viewer` | Read-only | `ChangeMe123!` |
-
-> Demo passwords only. Change them in real deployments.
+| User | Password | Role |
+|------|----------|------|
+| `admin` | `ChangeMe123!` | Administrator |
+| `netadmin` | `ChangeMe123!` | Network admin |
+| `biz` | `ChangeMe123!` | Department user |
+| `viewer` | `ChangeMe123!` | Read-only |
 
 ---
 
 ## 📡 API
 
-Base path: `/api/v1`
+Full interactive contract: **OpenAPI at `/docs`**.  
+Human overview: [`docs/API.md`](docs/API.md)
 
-| Area | Examples |
-|------|----------|
-| Auth | `POST /auth/login` · `POST /auth/change-password` |
-| Users | `GET/POST /users` · `POST /users/departments` |
-| Sites / Subnets | `CRUD` + `POST /subnets/{id}/archive` |
-| IPs | allocate / release / reserve / disable / enable / batch-release |
-| Devices | `GET/POST/PATCH/DELETE /devices` |
-| Ops | `/dashboard/overview` · `/logs` · `/conflicts` · `/io/export/*` |
-
-Interactive docs: **Swagger UI** at `/docs`.
-
----
-
-## 🛡 Security
-
-- Passwords hashed with **bcrypt**
-- **JWT** access tokens
-- Login **rate limiting** (in-process)
-- Request access log + `X-Request-ID`
-- Production requires strong `SECRET_KEY` (`APP_ENV=production`)
-- Department-scoped allocate for `dept_user`
-
----
-
-## 🗄 Data model (core)
-
-```text
-departments ─┬─ users
-             └─ subnets ── ip_addresses ── allocation_logs
-sites ───────┘                 │
-devices ───────────────────────┘
-conflicts
+```bash
+# login
+curl -s -X POST http://127.0.0.1:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"ChangeMe123!"}'
 ```
 
-Full SQL: [`docs/schema.sql`](docs/schema.sql) (SQLite + MySQL samples).
+Core mutations:
+
+```http
+POST /api/v1/ip-addresses/{id}/allocate
+POST /api/v1/ip-addresses/{id}/release
+POST /api/v1/ip-addresses/batch-release
+POST /api/v1/subnets/{id}/allocate-next
+POST /api/v1/subnets/{id}/archive
+```
 
 ---
 
-## 🖥 Screens
+## 🚢 Deployment notes
 
-| Screen | Path |
-|--------|------|
-| Login | `/login` |
-| Dashboard | `/` |
-| Subnets & IP pool | `/subnets`, `/subnets/:id` |
-| Address ledger | `/addresses` |
-| Devices | `/devices` |
-| Audit logs | `/logs` |
-| Users | `/users` (admin) |
-| Settings / CSV / password | `/settings` |
+| Environment | Guidance |
+|-------------|----------|
+| **Demo / lab** | SQLite file + Compose is enough |
+| **Team internal** | Put TLS in front (Caddy/Nginx), set `SECRET_KEY`, lock CORS |
+| **Production path** | Postgres/MySQL, managed secrets, backups, no default passwords |
+
+Config template: [`backend/.env.example`](backend/.env.example)  
+Schema reference: [`docs/schema.sql`](docs/schema.sql)
+
+```env
+APP_ENV=production
+SECRET_KEY=<generate-a-long-random-string>
+DATABASE_URL=postgresql+psycopg2://netledger:********@db:5432/netledger
+CORS_ORIGINS=https://ipam.example.com
+```
 
 ---
 
-## 📁 Project layout
+## 📊 Performance notes (design targets)
+
+| Metric | Target (lab hardware) |
+|--------|------------------------|
+| List page (paginated) | Interactive on tens of thousands of rows with filters |
+| Allocate under concurrency | Safe via conditional `UPDATE` (no double free→allocated race) |
+| Subnet materialization | Bounded expansion (guards against huge prefixes) |
+| Dashboard stats | Aggregations batched to avoid N+1 |
+
+> Numbers vary by disk and DB engine; SQLite is for demo, not multi-writer HA.
+
+---
+
+## 🗺 Roadmap
+
+- [x] IP lifecycle + RBAC + devices + audit  
+- [x] Conditional allocate, batch release, subnet archive  
+- [x] CI, Docker, security policy, product docs  
+- [ ] Public demo environment + demo GIF  
+- [ ] GHCR container publish  
+- [ ] Discovery adapter interface (import ARP/Nmap results)  
+- [ ] Optional OIDC login  
+- [ ] First-class PostgreSQL compose profile  
+
+---
+
+## ❓ FAQ
+
+**Is this a full Infoblox replacement?**  
+No. NetLedger is a **lightweight inventory IPAM**. It optimizes for clarity and speed-to-deploy, not global DDI.
+
+**Is conflict scan real network probing?**  
+No. `simulate-scan` generates demo conflict records so operators can practice resolution workflows.
+
+**Can I use MySQL?**  
+Yes. Schema samples are in `docs/schema.sql`. Point `DATABASE_URL` at MySQL/Postgres for multi-user deployments.
+
+**Is the backend Python?**  
+Yes — **Python + FastAPI** is the system of record. The UI is a React SPA.
+
+**Is this only a student project?**  
+It started as a serious full-stack IPAM implementation and is packaged as a maintainable open-source product. Use it for learning, labs, or as a foundation for internal tools.
+
+---
+
+## 📁 Repository layout
 
 ```text
-.
-├── backend/                 # FastAPI application
-│   ├── app/
-│   │   ├── api/v1/          # REST routers
-│   │   ├── core/            # config, security, middleware
-│   │   ├── models/          # SQLAlchemy models
-│   │   ├── services/        # domain logic
-│   │   └── seed.py          # demo data
-│   ├── tests/               # pytest
-│   ├── Dockerfile
-│   └── requirements.txt
+netledger/
+├── backend/                 # FastAPI application + pytest
 ├── frontend/                # React SPA
-│   ├── src/pages/
-│   ├── src/components/
-│   └── Dockerfile
-├── docs/                    # design notes & schema
+├── docs/                    # Product, architecture, schema
+├── .github/workflows/       # CI
 ├── docker-compose.yml
+├── Makefile
 └── README.md
 ```
 
 ---
 
-## ⚙️ Configuration
+## 🤝 Contributing
 
-Copy `backend/.env.example` → `backend/.env` if needed:
-
-```env
-APP_ENV=development
-SECRET_KEY=          # empty = auto file for local dev
-DATABASE_URL=sqlite:///./ipam.db
-CORS_ORIGINS=http://localhost:5173,http://localhost:5175
-```
-
-Production:
-
-```env
-APP_ENV=production
-SECRET_KEY=<random-32+-chars>
-DATABASE_URL=postgresql+psycopg2://user:pass@host/ipam
-```
-
----
-
-## 🗺️ Roadmap
-
-- [x] IP lifecycle + RBAC + devices + logs  
-- [x] Conditional allocate / batch release / subnet archive  
-- [x] pytest + Docker  
-- [ ] Real network discovery (ARP/Nmap adapters)  
-- [ ] DHCP integration  
-- [ ] IPv6 planning  
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).  
+Security reports: [SECURITY.md](SECURITY.md).  
+Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE) © 2026 NetLedger contributors
 
 ---
 
 <p align="center">
-  Built for learning & demo · Not a commercial IPAM replacement<br/>
-  If this repo helps you, consider giving it a ⭐
+  <b>NetLedger</b> — stop managing production IPs in spreadsheets.<br/>
+  Star the repo if it saves you an afternoon of Excel archaeology.
 </p>
