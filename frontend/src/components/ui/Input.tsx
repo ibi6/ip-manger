@@ -1,23 +1,36 @@
 import { cn } from '@/lib/cn'
-import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import {
+  Children,
+  cloneElement,
+  forwardRef,
+  useId,
+  type InputHTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react'
 
-export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input({ className, ...props }, ref) {
   return (
     <input
+      ref={ref}
       className={cn(
-        'w-full rounded-2xl border border-black/[0.06] bg-white px-3.5 py-2.5 text-sm text-ink-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/12',
+        'min-h-11 w-full rounded-2xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink-900 outline-none transition placeholder:text-muted focus:border-teal-500 focus:ring-4 focus:ring-teal-500/12',
         className,
       )}
       {...props}
     />
   )
-}
+  },
+)
 
 export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       className={cn(
-        'w-full rounded-2xl border border-black/[0.06] bg-white px-3.5 py-2.5 text-sm text-ink-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-500/12',
+        'min-h-11 w-full rounded-2xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-500/12',
         className,
       )}
       {...props}
@@ -31,7 +44,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
   return (
     <textarea
       className={cn(
-        'w-full resize-y rounded-2xl border border-black/[0.06] bg-white px-3.5 py-2.5 text-sm text-ink-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/12',
+        'w-full resize-y rounded-2xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink-900 outline-none transition placeholder:text-muted focus:border-teal-500 focus:ring-4 focus:ring-teal-500/12',
         className,
       )}
       {...props}
@@ -39,7 +52,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
   )
 }
 
-export function Label({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
+export function Label({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
   return (
     <label htmlFor={htmlFor} className="mb-1.5 block text-xs font-medium tracking-wide text-ink-700">
       {children}
@@ -53,14 +66,30 @@ export function Field({
   hint,
 }: {
   label: string
-  children: React.ReactNode
+  children: ReactNode
   hint?: string
 }) {
+  const generatedId = useId().replaceAll(':', '')
+  const control = Children.only(children) as ReactElement<{
+    id?: string
+    'aria-describedby'?: string
+  }>
+  const controlId = control.props.id || `field-${generatedId}`
+  const hintId = hint ? `${controlId}-hint` : undefined
+  const describedBy = [control.props['aria-describedby'], hintId].filter(Boolean).join(' ')
+
   return (
     <div>
-      <Label>{label}</Label>
-      {children}
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+      <Label htmlFor={controlId}>{label}</Label>
+      {cloneElement(control, {
+        id: controlId,
+        'aria-describedby': describedBy || undefined,
+      })}
+      {hint ? (
+        <p id={hintId} className="mt-1 text-xs text-muted">
+          {hint}
+        </p>
+      ) : null}
     </div>
   )
 }

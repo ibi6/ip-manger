@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -14,13 +15,25 @@ from app.schemas.common import Message
 from app.services.subnet_service import create_subnet_with_pool
 
 router = APIRouter(prefix="/io", tags=["import-export"])
+MAX_CSV_BYTES = 2 * 1024 * 1024
+MAX_CSV_ROWS = 100
+
+
+def _safe_csv_cell(value: str) -> str:
+    """Neutralize spreadsheet formulas and NUL bytes in exported cells."""
+    cleaned = str(value).replace("\x00", "")
+    stripped = cleaned.lstrip()
+    if stripped.startswith(("=", "+", "-", "@")):
+        leading = cleaned[: len(cleaned) - len(stripped)]
+        return f"{leading}'{stripped}"
+    return cleaned
 
 
 def _csv_response(filename: str, rows: list[list[str]]) -> StreamingResponse:
     buf = io.StringIO()
     writer = csv.writer(buf)
     for row in rows:
-        writer.writerow(row)
+        writer.writerow([_safe_csv_cell(cell) for cell in row])
     # UTF-8 BOM for Excel
     content = "\ufeff" + buf.getvalue()
     return StreamingResponse(
@@ -35,9 +48,15 @@ def export_subnets(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> StreamingResponse:
-    subnets = db.scalars(
-        select(Subnet).options(joinedload(Subnet.site), joinedload(Subnet.department)).order_by(Subnet.id)
-    ).unique().all()
+    subnets = (
+        db.scalars(
+            select(Subnet)
+            .options(joinedload(Subnet.site), joinedload(Subnet.department))
+            .order_by(Subnet.id)
+        )
+        .unique()
+        .all()
+    )
     rows: list[list[str]] = [
         [
             "id",
@@ -142,7 +161,17 @@ def export_devices(
         stmt = stmt.where(Device.department_id == user.department_id)
     devices = db.scalars(stmt.order_by(Device.id)).unique().all()
     rows: list[list[str]] = [
-        ["id", "name", "device_type", "mac", "location", "department", "owner", "bound_ip", "remark"]
+        [
+            "id",
+            "name",
+            "device_type",
+            "mac",
+            "location",
+            "department",
+            "owner",
+            "bound_ip",
+            "remark",
+        ]
     ]
     for d in devices:
         bound = ""
@@ -181,7 +210,9 @@ async def import_subnets(
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="请上传 .csv 文件")
 
-    raw = await file.read()
+    raw = await file.read(MAX_CSV_BYTES + 1)
+    if len(raw) > MAX_CSV_BYTES:
+        raise HTTPException(status_code=413, detail="CSV 文件不能超过 2 MiB")
     try:
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
@@ -190,12 +221,15 @@ async def import_subnets(
     reader = csv.DictReader(io.StringIO(text))
     if not reader.fieldnames:
         raise HTTPException(status_code=400, detail="CSV 为空或缺少表头")
+    records = list(reader)
+    if len(records) > MAX_CSV_ROWS:
+        raise HTTPException(status_code=400, detail=f"单次最多导入 {MAX_CSV_ROWS} 行")
 
     created = 0
     skipped = 0
     errors: list[str] = []
 
-    for i, row in enumerate(reader, start=2):
+    for i, row in enumerate(records, start=2):
         name = (row.get("name") or "").strip()
         cidr = (row.get("cidr") or "").strip()
         site_code = (row.get("site_code") or row.get("site") or "").strip()
@@ -236,7 +270,9 @@ async def import_subnets(
     msg = f"导入完成：成功 {created}，跳过 {skipped}"
     if errors:
         msg += "；部分错误：" + " | ".join(errors[:5])
-    return Message(message=msg, data={"created": created, "skipped": skipped, "errors": errors[:20]})
+    return Message(
+        message=msg, data={"created": created, "skipped": skipped, "errors": errors[:20]}
+    )
 
 
 @router.get("/template/subnets")

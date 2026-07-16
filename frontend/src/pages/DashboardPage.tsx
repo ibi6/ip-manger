@@ -13,8 +13,9 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import { SoftBadge, StatusBadge } from '@/components/ui/Badge'
 import { ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { api, type ApiDashboard, type ApiIp } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import { cn } from '@/lib/cn'
+import { clampPercent, formatShortDate } from '@/lib/format'
 import type { IpStatus } from '@/types'
 
 export function DashboardPage() {
@@ -126,7 +127,7 @@ export function DashboardPage() {
                   <span className="text-ink-700">{s.label}</span>
                   <span className="font-medium tabular-nums text-ink-800">{s.n.toLocaleString()}</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[#eef1f3]">
+                <div className="h-2 overflow-hidden rounded-full bg-track">
                   <div
                     className={cn('h-full rounded-full transition-all', s.color)}
                     style={{ width: `${(s.n / Math.max(stats.total_ips, 1)) * 100}%` }}
@@ -164,7 +165,7 @@ export function DashboardPage() {
                       {s.utilization}%
                     </span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[#eef1f3]">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-track">
                     <div
                       className={cn(
                         'h-full rounded-full',
@@ -174,7 +175,7 @@ export function DashboardPage() {
                             ? 'bg-amber-500'
                             : 'bg-teal-600',
                       )}
-                      style={{ width: `${Math.min(s.utilization, 100)}%` }}
+                      style={{ width: `${clampPercent(s.utilization)}%` }}
                     />
                   </div>
                 </div>
@@ -205,7 +206,7 @@ export function DashboardPage() {
                 <Link
                   key={ip.id}
                   to={`/addresses/${ip.id}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl px-2.5 py-2.5 transition hover:bg-[#f6f8f9]"
+                  className="flex items-center justify-between gap-3 rounded-2xl px-2.5 py-2.5 transition hover:bg-surface-subtle"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -232,7 +233,7 @@ export function DashboardPage() {
               stats.recent_logs.map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-start justify-between gap-3 rounded-2xl border border-black/[0.04] bg-[#fafbfc] px-3.5 py-2.5"
+                  className="flex items-start justify-between gap-3 rounded-2xl border border-line/70 bg-surface-subtle px-3.5 py-2.5"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -243,7 +244,9 @@ export function DashboardPage() {
                       {log.operator_name} · {log.detail}
                     </div>
                   </div>
-                  <div className="shrink-0 text-[11px] text-muted">{log.created_at.slice(0, 10)}</div>
+                  <div className="shrink-0 text-[11px] text-muted">
+                    {formatShortDate(log.created_at)}
+                  </div>
                 </div>
               ))
             )}

@@ -1,7 +1,8 @@
 """设备台账：先登记设备，再在分配 IP 时绑定。"""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import can_manage_network, get_current_user
@@ -29,7 +30,7 @@ def _load(db: Session, device_id: int) -> Device | None:
 
 @router.get("", response_model=list[DeviceOut])
 def list_devices(
-    q: str | None = None,
+    q: str | None = Query(default=None, max_length=100),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list[DeviceOut]:
@@ -40,16 +41,16 @@ def list_devices(
     )
     if user.role == "dept_user":
         stmt = stmt.where(Device.department_id == user.department_id)
-    devices = list(db.scalars(stmt.order_by(Device.id.desc())).unique().all())
     if q:
-        ql = q.lower()
-        devices = [
-            d
-            for d in devices
-            if ql in d.name.lower()
-            or ql in (d.mac or "").lower()
-            or ql in (d.location or "").lower()
-        ]
+        pattern = f"%{q}%"
+        stmt = stmt.where(
+            or_(
+                Device.name.ilike(pattern),
+                Device.mac.ilike(pattern),
+                Device.location.ilike(pattern),
+            )
+        )
+    devices = list(db.scalars(stmt.order_by(Device.id.desc())).unique().all())
     return [device_out(d) for d in devices]
 
 
@@ -64,7 +65,11 @@ def create_device(
     dtype = body.device_type or "other"
     if dtype not in VALID_DEVICE_TYPES:
         raise HTTPException(status_code=400, detail="设备类型不合法")
-    dept_id = body.department_id or user.department_id
+    if user.role == "dept_user" and body.department_id not in {None, user.department_id}:
+        raise HTTPException(status_code=403, detail="无权为其他部门创建设备")
+    dept_id = (
+        user.department_id if user.role == "dept_user" else body.department_id or user.department_id
+    )
     if body.department_id and not db.get(Department, body.department_id):
         raise HTTPException(status_code=400, detail="部门不存在")
     try:
@@ -76,17 +81,25 @@ def create_device(
         if exists:
             raise HTTPException(status_code=400, detail=f"MAC 已被设备「{exists.name}」使用")
 
+    owner_id = user.id if user.role == "dept_user" else body.owner_user_id or user.id
+    if owner_id and not db.get(User, owner_id):
+        raise HTTPException(status_code=400, detail="负责人不存在")
+
     dev = Device(
         name=body.name.strip(),
         device_type=dtype,
         mac=mac,
         location=body.location,
         department_id=dept_id,
-        owner_user_id=body.owner_user_id or user.id,
+        owner_user_id=owner_id,
         remark=body.remark,
     )
     db.add(dev)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="MAC 地址已被其他设备使用") from exc
     dev = _load(db, dev.id)
     assert dev is not None
     return device_out(dev)
@@ -116,21 +129,27 @@ def update_device(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         if new_mac:
-            clash = db.scalar(
-                select(Device).where(Device.mac == new_mac, Device.id != device_id)
-            )
+            clash = db.scalar(select(Device).where(Device.mac == new_mac, Device.id != device_id))
             if clash:
                 raise HTTPException(status_code=400, detail=f"MAC 已被设备「{clash.name}」使用")
         dev.mac = new_mac
     if body.location is not None:
         dev.location = body.location
     if body.department_id is not None:
+        if not db.get(Department, body.department_id):
+            raise HTTPException(status_code=400, detail="部门不存在")
         dev.department_id = body.department_id
     if body.owner_user_id is not None:
+        if not db.get(User, body.owner_user_id):
+            raise HTTPException(status_code=400, detail="负责人不存在")
         dev.owner_user_id = body.owner_user_id
     if body.remark is not None:
         dev.remark = body.remark
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="设备更新违反唯一性或外键约束") from exc
     dev = _load(db, device_id)
     assert dev is not None
     return device_out(dev)

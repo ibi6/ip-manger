@@ -4,8 +4,9 @@
 
 | Version | Supported |
 |---------|-----------|
-| 1.5.x   | ✅ |
-| < 1.4   | ❌ Best-effort |
+| 1.6.x   | ✅ |
+| 1.5.x   | Security fixes only |
+| < 1.5   | ❌ Best-effort |
 
 ## Reporting a Vulnerability
 
@@ -20,20 +21,24 @@ We aim to acknowledge reports within **72 hours**.
 ## Security Features (current)
 
 - Password hashing with **bcrypt**  
-- **JWT** bearer authentication  
+- Strong password validation (12+ characters; letters, digits, special characters)
+- **JWT** bearer authentication with credential-version revocation
 - Role-based authorization on mutating endpoints  
-- Login **rate limiting** (process-local)  
+- Failure-only login **rate limiting** (process-local)
+- Proxy-aware rate-limit identity that ignores forwarding headers by default and rejects spoofed first-hop values
 - Request **access logs** with `X-Request-ID`  
+- CSP, frame denial, MIME sniffing protection, referrer and permissions policies
 - Production requires a strong `SECRET_KEY` when `APP_ENV=production`  
+- Production refuses demo seed data and requires an explicit bootstrap administrator on an empty DB
 
 ## Hardening Checklist (production)
 
 - [ ] Set a long random `SECRET_KEY`  
 - [ ] Terminate TLS at a reverse proxy  
-- [ ] Use PostgreSQL/MySQL instead of SQLite for multi-user load  
+- [ ] Use PostgreSQL instead of SQLite for multi-user write load
 - [ ] Restrict `CORS_ORIGINS`  
-- [ ] Change all seed passwords  
-- [ ] Disable public demo accounts  
+- [ ] Set `SEED_DEMO_DATA=false` and remove `BOOTSTRAP_ADMIN_PASSWORD` after first start
+- [ ] Keep `TRUST_PROXY_HEADERS=false` unless every API request crosses a controlled proxy
 - [ ] Back up the database regularly  
 - [ ] Run behind a WAF / fail2ban if internet-exposed  
 
@@ -41,7 +46,8 @@ We aim to acknowledge reports within **72 hours**.
 
 - In-memory rate limiting does not sync across multiple workers  
 - Conflict “scan” is a **simulation** for demo workflows, not network discovery  
-- JWT tokens are not server-side revoked until expiry (logout is client-side)  
+- Logout is client-side; password changes and admin password resets revoke existing tokens
+- Bearer tokens remain accessible to same-origin JavaScript, so CSP and dependency hygiene remain important
 
 ## Dependencies
 

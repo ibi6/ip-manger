@@ -6,7 +6,7 @@ import { Field, Input, Select } from '@/components/ui/Input'
 import { SoftBadge } from '@/components/ui/Badge'
 import { ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { api, ApiError, type ApiDepartment, type ApiUser } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import { roleLabel } from '@/lib/labels'
 import type { Role } from '@/types'
 
@@ -19,7 +19,7 @@ export function UsersPage() {
   const [msg, setMsg] = useState('')
 
   const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('123456')
+  const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [role, setRole] = useState<Role>('viewer')
   const [departmentId, setDepartmentId] = useState('')
@@ -84,7 +84,7 @@ export function UsersPage() {
       setMsg('已添加用户')
       setUsername('')
       setDisplayName('')
-      setPassword('123456')
+      setPassword('')
       await load()
     } catch (err) {
       setMsg(err instanceof ApiError ? err.message : '添加失败')
@@ -206,8 +206,16 @@ export function UsersPage() {
               <Field label="显示名">
                 <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
               </Field>
-              <Field label="初始密码">
-                <Input value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <Field label="初始密码" hint="至少 12 位，包含字母、数字和特殊字符">
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  minLength={12}
+                  maxLength={128}
+                  required
+                />
               </Field>
               <Field label="角色">
                 <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>

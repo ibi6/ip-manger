@@ -5,15 +5,17 @@ Revises:
 Create Date: 2026-07-15
 
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "0001"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -33,7 +35,12 @@ def upgrade() -> None:
         sa.Column("code", sa.String(length=50), nullable=False),
         sa.Column("location", sa.String(length=200), nullable=False),
         sa.Column("remark", sa.String(length=500), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("code"),
     )
@@ -47,7 +54,12 @@ def upgrade() -> None:
         sa.Column("department_id", sa.Integer(), nullable=False),
         sa.Column("avatar_color", sa.String(length=20), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["department_id"], ["departments.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -65,7 +77,12 @@ def upgrade() -> None:
         sa.Column("purpose", sa.String(length=100), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("status", sa.String(length=20), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["department_id"], ["departments.id"]),
         sa.ForeignKeyConstraint(["site_id"], ["sites.id"]),
         sa.PrimaryKeyConstraint("id"),
@@ -108,7 +125,12 @@ def upgrade() -> None:
         sa.Column("operator_id", sa.Integer(), nullable=True),
         sa.Column("operator_name", sa.String(length=100), nullable=False),
         sa.Column("detail", sa.String(length=500), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["ip_address_id"], ["ip_addresses.id"]),
         sa.ForeignKeyConstraint(["operator_id"], ["users.id"]),
         sa.PrimaryKeyConstraint("id"),
@@ -124,7 +146,12 @@ def upgrade() -> None:
         sa.Column("conflict_type", sa.String(length=40), nullable=False),
         sa.Column("detail", sa.Text(), nullable=False),
         sa.Column("status", sa.String(length=20), nullable=False),
-        sa.Column("detected_at", sa.DateTime(timezone=True), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False),
+        sa.Column(
+            "detected_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["ip_address_id"], ["ip_addresses.id"]),
         sa.PrimaryKeyConstraint("id"),
     )

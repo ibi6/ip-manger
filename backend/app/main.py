@@ -1,11 +1,12 @@
-from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 import logging
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+import app.models  # noqa: F401
 from app.api.v1.router import api_router
 from app.core.config import get_secret_key, get_settings
 from app.core.exceptions import register_exception_handlers
@@ -13,9 +14,7 @@ from app.core.middleware import RequestLogMiddleware
 from app.db.base import Base
 from app.db.migrate_sqlite import ensure_sqlite_schema
 from app.db.session import SessionLocal, engine
-from app.seed import seed_if_empty
-
-import app.models  # noqa: F401
+from app.seed import initialize_data
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,7 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ipam")
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "1.6.0"
 
 
 @asynccontextmanager
@@ -34,7 +33,7 @@ async def lifespan(_: FastAPI):
     ensure_sqlite_schema()
     db = SessionLocal()
     try:
-        seed_if_empty(db)
+        initialize_data(db, settings)
     finally:
         db.close()
     logger.info("IPAM API %s ready", APP_VERSION)
@@ -45,7 +44,7 @@ settings = get_settings()
 app = FastAPI(
     title=settings.app_name,
     version=APP_VERSION,
-    description="企业IP地址管理系统 API（毕业设计）",
+    description="NetLedger 轻量企业 IP 地址管理 API",
     lifespan=lifespan,
 )
 
@@ -77,5 +76,5 @@ def health():
         "version": APP_VERSION,
         "env": settings.app_env,
         "database": "up" if db_ok else "down",
-        "time": datetime.now(timezone.utc).isoformat(),
+        "time": datetime.now(UTC).isoformat(),
     }

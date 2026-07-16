@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Field, Input, Select, Textarea } from '@/components/ui/Input'
 import { api, ApiError, type ApiSite } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 
 export function SubnetFormPage() {
   const { canManageNetwork, user } = useAuth()

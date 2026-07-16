@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { SoftBadge } from '@/components/ui/Badge'
 import { EmptyState, ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { api, type ApiLog } from '@/lib/api'
+import { formatDateTime } from '@/lib/format'
 
 export function LogsPage() {
   const [list, setList] = useState<ApiLog[]>([])
@@ -67,7 +68,7 @@ export function LogsPage() {
                   </div>
                   <div className="text-sm text-ink-800">{log.detail}</div>
                   <div className="mt-1 text-xs text-muted">
-                    {log.operator_name} · {log.created_at.slice(0, 19).replace('T', ' ')}
+                    {log.operator_name} · {formatDateTime(log.created_at)}
                   </div>
                 </div>
               </li>

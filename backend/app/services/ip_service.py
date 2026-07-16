@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from sqlalchemy import update
 from sqlalchemy.orm import Session
@@ -77,7 +77,7 @@ def allocate_ip(
 
     exp = _parse_expire(expire_at)
     mac_norm = normalize_mac(mac)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # 如果传了 device_id，从设备台账带出名称/MAC，方便统计
     bound_device_id = device_id
@@ -166,7 +166,9 @@ def release_ip(db: Session, ip: IpAddress, operator: User) -> IpAddress:
     return ip
 
 
-def reserve_ip(db: Session, ip: IpAddress, operator: User, remark: str | None = "人工预留") -> IpAddress:
+def reserve_ip(
+    db: Session, ip: IpAddress, operator: User, remark: str | None = "人工预留"
+) -> IpAddress:
     if ip.status != "free":
         raise ValueError("只能预留空闲地址")
     if _is_system_locked(ip):
@@ -186,7 +188,9 @@ def reserve_ip(db: Session, ip: IpAddress, operator: User, remark: str | None = 
     return ip
 
 
-def disable_ip(db: Session, ip: IpAddress, operator: User, remark: str | None = "禁用") -> IpAddress:
+def disable_ip(
+    db: Session, ip: IpAddress, operator: User, remark: str | None = "禁用"
+) -> IpAddress:
     if _is_system_locked(ip):
         raise ValueError("系统预留地址不可禁用")
     if ip.status == "disabled":

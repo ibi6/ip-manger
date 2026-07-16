@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
+import { productConfig } from '@/config/product'
 
 interface Props {
   children: ReactNode
@@ -30,7 +31,10 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
             <h1 className="font-display text-xl font-semibold text-ink-900">出错了</h1>
             <p className="mt-2 text-sm text-muted">
-              {this.state.error.message || '未知错误'}。可尝试刷新页面或重新登录。
+              {import.meta.env.DEV && this.state.error.message
+                ? `${this.state.error.message}。`
+                : `${productConfig.name} 暂时无法显示这个页面。`}
+              可尝试返回工作台或刷新页面。
             </p>
             <div className="mt-6 flex justify-center gap-2">
               <Button

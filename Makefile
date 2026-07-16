@@ -10,11 +10,16 @@ help:
 	@echo "  make docker-down - docker compose down"
 
 install:
-	cd backend && python -m pip install -r requirements.txt
-	cd frontend && npm install
+	cd backend && python -m pip install -r requirements-dev.txt
+	cd frontend && npm ci
 
 test:
-	cd backend && pytest tests -q
+	cd backend && python -m pytest tests -q
+	cd frontend && npm test
+
+lint:
+	cd backend && python -m ruff check app tests alembic
+	cd frontend && npm run lint
 
 backend:
 	cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000

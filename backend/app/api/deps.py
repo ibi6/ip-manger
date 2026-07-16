@@ -25,7 +25,10 @@ def get_current_user(
         payload = decode_token(creds.credentials)
         username = payload.get("sub")
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="令牌无效或已过期")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="令牌无效或已过期",
+        ) from None
     if not username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="令牌无效")
 
@@ -34,6 +37,11 @@ def get_current_user(
     )
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在或已禁用")
+    token_version = payload.get("ver")
+    if not isinstance(token_version, int) or token_version != user.auth_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="令牌已失效，请重新登录"
+        )
     if user.role not in VALID_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="用户角色无效")
     return user

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -79,9 +81,9 @@ def _query_ips(
 
 @router.get("/ip-addresses", response_model=list[IpOut])
 def list_ips(
-    subnet_id: int | None = None,
-    status: str | None = None,
-    q: str | None = None,
+    subnet_id: int | None = Query(default=None, gt=0),
+    status: Literal["free", "allocated", "reserved", "disabled"] | None = None,
+    q: str | None = Query(default=None, max_length=100),
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
@@ -95,9 +97,9 @@ def list_ips(
 
 @router.get("/ip-addresses/page", response_model=IpListPage)
 def list_ips_page(
-    subnet_id: int | None = None,
-    status: str | None = None,
-    q: str | None = None,
+    subnet_id: int | None = Query(default=None, gt=0),
+    status: Literal["free", "allocated", "reserved", "disabled"] | None = None,
+    q: str | None = Query(default=None, max_length=100),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -342,15 +344,18 @@ def allocate_next_free(
 
 @router.get("/logs", response_model=list[LogOut])
 def list_logs(
-    address: str | None = None,
+    address: str | None = Query(default=None, max_length=50),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> list[LogOut]:
     stmt = select(AllocationLog).order_by(AllocationLog.id.desc()).limit(limit)
     if address:
-        stmt = select(AllocationLog).where(AllocationLog.address == address).order_by(
-            AllocationLog.id.desc()
-        ).limit(limit)
+        stmt = (
+            select(AllocationLog)
+            .where(AllocationLog.address == address)
+            .order_by(AllocationLog.id.desc())
+            .limit(limit)
+        )
     logs = db.scalars(stmt).all()
     return [log_out(x) for x in logs]

@@ -6,6 +6,8 @@ Base URL (local): `http://127.0.0.1:8000/api/v1`
 
 ## Authentication
 
+Login failures are limited per client address. Successful logins do not consume the failure budget and clear prior failures.
+
 ```http
 POST /auth/login
 Content-Type: application/json
@@ -24,6 +26,10 @@ All protected routes:
 ```http
 Authorization: Bearer <jwt>
 ```
+
+Tokens include an authentication version. Changing or resetting a password increments that version, so previously issued tokens receive `401` on their next request.
+
+New passwords must contain 12–128 characters, at least one letter, one digit, and one special character, and must fit bcrypt's 72-byte UTF-8 boundary.
 
 ## Resource map
 
@@ -59,7 +65,18 @@ Authorization: Bearer <jwt>
 {"detail":"human readable message"}
 ```
 
-Common codes: `400` business rule · `401` auth · `403` permission · `404` missing · `429` login throttle.
+Common codes: `400` business rule · `401` auth/expired or revoked token · `403` permission · `404` missing · `409` uniqueness race · `422` input validation · `429` login throttle.
+
+Validation errors preserve the same top-level shape and include a safe field list:
+
+```json
+{
+  "detail": "password: String should have at least 12 characters",
+  "errors": [{"loc": ["body", "password"], "msg": "String should have at least 12 characters"}]
+}
+```
+
+All API responses include `X-Request-ID` and browser security headers. Authentication responses include `Cache-Control: no-store`.
 
 ## Health
 

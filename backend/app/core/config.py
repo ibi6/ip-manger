@@ -44,9 +44,14 @@ def _load_or_create_dev_secret() -> str:
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
 
-    app_name: str = "企业IP地址管理系统"
+    app_name: str = "NetLedger 企业 IP 地址管理"
     app_env: str = Field(default="development", validation_alias="APP_ENV")
     # Empty = auto (dev file / production fail)
     secret_key: str = Field(default="", validation_alias="SECRET_KEY")
@@ -60,15 +65,21 @@ class Settings(BaseSettings):
     )
     login_rate_limit: int = 8  # attempts per window
     login_rate_window_seconds: int = 60
-    allow_insecure_defaults: bool = False
+    trust_proxy_headers: bool = False
+    seed_demo_data: bool | None = None
+    bootstrap_admin_username: str = "admin"
+    bootstrap_admin_display_name: str = "NetLedger 管理员"
+    bootstrap_admin_password: str = ""
 
     @field_validator("app_env")
     @classmethod
     def normalize_env(cls, v: str) -> str:
-        v = (v or "development").strip().lower()
-        if v in {"prod", "production"}:
+        normalized = (v or "development").strip().lower()
+        if normalized in {"prod", "production"}:
             return "production"
-        return "development"
+        if normalized in {"dev", "development"}:
+            return "development"
+        raise ValueError("APP_ENV 仅支持 development/dev 或 production/prod")
 
     @property
     def is_production(self) -> bool:
@@ -78,12 +89,19 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
+    @property
+    def demo_seed_enabled(self) -> bool:
+        """Enable sample data by default only outside production."""
+        if self.is_production:
+            return False
+        return True if self.seed_demo_data is None else self.seed_demo_data
+
     def resolve_secret_key(self) -> str:
         key = (self.secret_key or "").strip()
         if key and key not in _INSECURE_KEYS and len(key) >= 32:
             return key
 
-        if self.is_production and not self.allow_insecure_defaults:
+        if self.is_production:
             raise RuntimeError(
                 "生产环境必须设置足够长的 SECRET_KEY（≥32 字符），"
                 "请通过环境变量 SECRET_KEY 配置，且勿使用示例默认值。"
@@ -106,5 +124,7 @@ def get_settings() -> Settings:
     return Settings()
 
 
+@lru_cache
 def get_secret_key() -> str:
+    """Resolve the signing key once per process to avoid repeated I/O and warning logs."""
     return get_settings().resolve_secret_key()

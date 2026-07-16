@@ -8,7 +8,7 @@ import { Input, Select } from '@/components/ui/Input'
 import { SoftBadge } from '@/components/ui/Badge'
 import { EmptyState, ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { api, ApiError, type ApiSite, type ApiSubnet } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import { cn } from '@/lib/cn'
 
 export function SubnetsPage() {

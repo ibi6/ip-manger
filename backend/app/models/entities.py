@@ -40,6 +40,9 @@ class User(Base):
     department_id: Mapped[int] = mapped_column(ForeignKey("departments.id"), nullable=False)
     avatar_color: Mapped[str] = mapped_column(String(20), default="#0d9488")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    auth_version: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     department: Mapped[Department] = relationship(back_populates="users")
@@ -55,7 +58,9 @@ class Site(Base):
     remark: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    subnets: Mapped[list[Subnet]] = relationship(back_populates="site", cascade="all, delete-orphan")
+    subnets: Mapped[list[Subnet]] = relationship(
+        back_populates="site", cascade="all, delete-orphan"
+    )
 
 
 class Subnet(Base):
@@ -89,7 +94,7 @@ class Device(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     device_type: Mapped[str] = mapped_column(String(30), default="other")
-    mac: Mapped[str | None] = mapped_column(String(30), index=True)
+    mac: Mapped[str | None] = mapped_column(String(30), unique=True, index=True)
     location: Mapped[str | None] = mapped_column(String(200))
     department_id: Mapped[int | None] = mapped_column(ForeignKey("departments.id"))
     owner_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
@@ -150,4 +155,6 @@ class Conflict(Base):
     conflict_type: Mapped[str] = mapped_column(String(40), nullable=False)
     detail: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)
-    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    detected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

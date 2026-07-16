@@ -31,3 +31,36 @@ def test_login_rate_limit(client):
         client.post("/api/v1/auth/login", json={"username": "admin", "password": "wrong"})
     r = client.post("/api/v1/auth/login", json={"username": "admin", "password": "wrong"})
     assert r.status_code == 429
+
+
+def test_successful_logins_do_not_consume_failure_budget(client):
+    """Valid credentials must never be treated as brute-force failures."""
+    for _ in range(12):
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"username": "admin", "password": "ChangeMe123!"},
+        )
+        assert response.status_code == 200, response.text
+
+
+def test_successful_login_clears_previous_failures(client):
+    """A real user who recovers their password should receive a fresh budget."""
+    for _ in range(7):
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"username": "admin", "password": "wrong"},
+        )
+        assert response.status_code == 401
+
+    recovered = client.post(
+        "/api/v1/auth/login",
+        json={"username": "admin", "password": "ChangeMe123!"},
+    )
+    assert recovered.status_code == 200
+
+    for _ in range(7):
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"username": "admin", "password": "wrong"},
+        )
+        assert response.status_code == 401

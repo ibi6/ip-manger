@@ -59,9 +59,11 @@ def list_users(
     current: User = Depends(get_current_user),
 ) -> list[UserOut]:
     _require_admin(current)
-    users = db.scalars(
-        select(User).options(joinedload(User.department)).order_by(User.id)
-    ).unique().all()
+    users = (
+        db.scalars(select(User).options(joinedload(User.department)).order_by(User.id))
+        .unique()
+        .all()
+    )
     return [user_out(u) for u in users]
 
 
@@ -90,9 +92,7 @@ def create_user(
     )
     db.add(user)
     db.commit()
-    user = db.scalar(
-        select(User).options(joinedload(User.department)).where(User.id == user.id)
-    )
+    user = db.scalar(select(User).options(joinedload(User.department)).where(User.id == user.id))
     assert user is not None
     return user_out(user)
 
@@ -105,9 +105,7 @@ def update_user(
     current: User = Depends(get_current_user),
 ) -> UserOut:
     _require_admin(current)
-    user = db.scalar(
-        select(User).options(joinedload(User.department)).where(User.id == user_id)
-    )
+    user = db.scalar(select(User).options(joinedload(User.department)).where(User.id == user_id))
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
 
@@ -132,10 +130,9 @@ def update_user(
         user.is_active = body.is_active
     if body.password:
         user.password_hash = hash_password(body.password)
+        user.auth_version += 1
 
     db.commit()
-    user = db.scalar(
-        select(User).options(joinedload(User.department)).where(User.id == user_id)
-    )
+    user = db.scalar(select(User).options(joinedload(User.department)).where(User.id == user_id))
     assert user is not None
     return user_out(user)

@@ -13,7 +13,7 @@ def test_admin_can_list_and_create_user(client):
         headers=h,
         json={
             "username": "newuser1",
-            "password": "12345678",
+            "password": "UserSecure99!",
             "display_name": "测试用户",
             "role": "viewer",
             "department_id": depts[0]["id"],

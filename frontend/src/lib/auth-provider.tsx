@@ -1,28 +1,8 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
-import { api, mapUser, setToken, getToken, ApiError } from '@/lib/api'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+
+import { ApiError, api, getToken, mapUser, setToken } from '@/lib/api'
+import { AuthContext, type AuthContextValue } from '@/lib/auth-context'
 import type { Role, User } from '@/types'
-
-interface AuthContextValue {
-  user: User | null
-  loading: boolean
-  login: (username: string, password: string) => Promise<{ ok: true } | { ok: false; message: string }>
-  logout: () => void
-  isAuthenticated: boolean
-  canManageNetwork: boolean
-  canAllocate: boolean
-  canAdmin: boolean
-  refreshUser: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -43,22 +23,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    ;(async () => {
-      await refreshUser()
-      setLoading(false)
-    })()
+    void refreshUser().finally(() => setLoading(false))
   }, [refreshUser])
 
   const login = useCallback(async (username: string, password: string) => {
     try {
-      const res = await api.login(username, password)
-      setToken(res.access_token)
+      const response = await api.login(username, password)
+      setToken(response.access_token)
       const me = await api.me()
       setUser(mapUser(me))
       return { ok: true as const }
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : '登录失败'
-      return { ok: false as const, message: msg }
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : '登录失败，请检查网络后重试'
+      return { ok: false as const, message }
     }
   }, [])
 
@@ -68,14 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const role = user?.role as Role | undefined
-
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       loading,
       login,
       logout,
-      isAuthenticated: !!user,
+      isAuthenticated: Boolean(user),
       canManageNetwork: role === 'admin' || role === 'network_admin',
       canAllocate: role === 'admin' || role === 'network_admin' || role === 'dept_user',
       canAdmin: role === 'admin',
@@ -85,10 +61,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
 }

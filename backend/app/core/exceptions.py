@@ -14,7 +14,11 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(_: Request, exc: RequestValidationError):
-        errors = exc.errors()
+        # Pydantic may place a ValueError object in `ctx`, which is not JSON serializable
+        # and should not be exposed to API clients. The human-readable `msg` is sufficient.
+        errors = [
+            {key: value for key, value in error.items() if key != "ctx"} for error in exc.errors()
+        ]
         first = errors[0] if errors else {}
         loc = ".".join(str(x) for x in first.get("loc", []) if x != "body")
         msg = first.get("msg", "参数校验失败")

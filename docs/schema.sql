@@ -24,6 +24,7 @@ CREATE TABLE users (
   department_id INT NOT NULL,
   avatar_color VARCHAR(20) NOT NULL DEFAULT '#0d9488',
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  auth_version INT NOT NULL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_users_dept FOREIGN KEY (department_id) REFERENCES departments(id)
 ) ENGINE=InnoDB;
@@ -65,7 +66,7 @@ CREATE TABLE devices (
   owner_user_id INT NULL,
   remark VARCHAR(500) NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  KEY ix_devices_mac (mac),
+  UNIQUE KEY uq_devices_mac (mac),
   CONSTRAINT fk_devices_dept FOREIGN KEY (department_id) REFERENCES departments(id),
   CONSTRAINT fk_devices_owner FOREIGN KEY (owner_user_id) REFERENCES users(id)
 ) ENGINE=InnoDB;
@@ -143,6 +144,7 @@ CREATE TABLE IF NOT EXISTS users (
   department_id INTEGER NOT NULL,
   avatar_color VARCHAR(20) NOT NULL DEFAULT '#0d9488',
   is_active BOOLEAN NOT NULL DEFAULT 1,
+  auth_version INTEGER NOT NULL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(department_id) REFERENCES departments(id)
 );
@@ -176,7 +178,7 @@ CREATE TABLE IF NOT EXISTS devices (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name VARCHAR(100) NOT NULL,
   device_type VARCHAR(30) NOT NULL DEFAULT 'other',
-  mac VARCHAR(30),
+  mac VARCHAR(30) UNIQUE,
   location VARCHAR(200),
   department_id INTEGER,
   owner_user_id INTEGER,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -9,6 +9,7 @@ from app.models import AllocationLog, Conflict, IpAddress, Site, Subnet, User
 from app.schemas.common import (
     ConflictOut,
     DashboardOut,
+    DeviceOut,
     IpOut,
     LogOut,
     SiteOut,
@@ -149,9 +150,7 @@ def ip_out(ip: IpAddress) -> IpOut:
     )
 
 
-def device_out(dev) -> "DeviceOut":
-    from app.schemas.common import DeviceOut
-
+def device_out(dev) -> DeviceOut:
     bound = None
     if getattr(dev, "addresses", None):
         for a in dev.addresses:
@@ -200,13 +199,12 @@ def conflict_out(c: Conflict) -> ConflictOut:
 def dashboard_out(db: Session) -> DashboardOut:
     site_count = db.scalar(select(func.count()).select_from(Site)) or 0
     subnet_count = (
-        db.scalar(
-            select(func.count()).select_from(Subnet).where(Subnet.status == "active")
-        )
-        or 0
+        db.scalar(select(func.count()).select_from(Subnet).where(Subnet.status == "active")) or 0
     )
 
-    status_rows = db.execute(select(IpAddress.status, func.count()).group_by(IpAddress.status)).all()
+    status_rows = db.execute(
+        select(IpAddress.status, func.count()).group_by(IpAddress.status)
+    ).all()
     counts = {s: n for s, n in status_rows}
     total = sum(counts.values())
     free = counts.get("free", 0)
@@ -218,7 +216,7 @@ def dashboard_out(db: Session) -> DashboardOut:
         db.scalar(select(func.count()).select_from(Conflict).where(Conflict.status == "open")) or 0
     )
 
-    now = datetime.now(timezone.utc).date()
+    now = datetime.now(UTC).date()
     soon = now + timedelta(days=30)
     expiring = (
         db.scalar(

@@ -20,9 +20,9 @@ export function CardHeader({
   action?: React.ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/[0.04] px-5 py-4">
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line/70 px-5 py-4">
       <div>
-        <h3 className="text-[15px] font-semibold text-ink-900">{title}</h3>
+        <h2 className="text-[15px] font-semibold text-ink-900">{title}</h2>
         {subtitle ? <p className="mt-0.5 text-xs text-muted">{subtitle}</p> : null}
       </div>
       {action}

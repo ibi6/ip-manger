@@ -3,7 +3,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_user
-from app.core.rate_limit import check_login_rate_limit
+from app.core.rate_limit import (
+    assert_login_allowed,
+    clear_login_failures,
+    record_login_failure,
+)
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models import User
@@ -19,15 +23,20 @@ def login(
     request: Request,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
-    check_login_rate_limit(request)
+    assert_login_allowed(request)
     user = db.scalar(
         select(User).options(joinedload(User.department)).where(User.username == body.username)
     )
     if not user or not verify_password(body.password, user.password_hash):
+        record_login_failure(request)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户名或密码错误")
+    clear_login_failures(request)
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="用户已禁用")
-    token = create_access_token(user.username, extra={"role": user.role, "uid": user.id})
+    token = create_access_token(
+        user.username,
+        extra={"role": user.role, "uid": user.id, "ver": user.auth_version},
+    )
     return TokenResponse(access_token=token)
 
 
@@ -51,5 +60,6 @@ def change_password(
     if body.old_password == body.new_password:
         raise HTTPException(status_code=400, detail="新密码不能与原密码相同")
     db_user.password_hash = hash_password(body.new_password)
+    db_user.auth_version += 1
     db.commit()
     return Message(message="密码已修改，请使用新密码重新登录")

@@ -1,14 +1,22 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8000/api/v1'
+import { networkErrorMessage } from '@/lib/network-error'
 
-const TOKEN_KEY = 'ipam_token'
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8000/api/v1'
+const configuredTimeout = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 15_000)
+const REQUEST_TIMEOUT_MS =
+  Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 15_000
+
+const TOKEN_KEY = 'netledger_access_token'
+const LEGACY_TOKEN_KEY = 'ipam_token'
 
 export function getToken() {
-  return localStorage.getItem(TOKEN_KEY)
+  localStorage.removeItem(LEGACY_TOKEN_KEY)
+  return sessionStorage.getItem(TOKEN_KEY)
 }
 
 export function setToken(token: string | null) {
-  if (token) localStorage.setItem(TOKEN_KEY, token)
-  else localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(LEGACY_TOKEN_KEY)
+  if (token) sessionStorage.setItem(TOKEN_KEY, token)
+  else sessionStorage.removeItem(TOKEN_KEY)
 }
 
 export class ApiError extends Error {
@@ -27,7 +35,25 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken()
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers })
+  const controller = new AbortController()
+  let timedOut = false
+  const onCallerAbort = () => controller.abort(init.signal?.reason)
+  if (init.signal?.aborted) controller.abort(init.signal.reason)
+  else init.signal?.addEventListener('abort', onCallerAbort, { once: true })
+  const timeout = globalThis.setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, REQUEST_TIMEOUT_MS)
+
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...init, headers, signal: controller.signal })
+  } catch {
+    throw new ApiError(0, networkErrorMessage(timedOut))
+  } finally {
+    globalThis.clearTimeout(timeout)
+    init.signal?.removeEventListener('abort', onCallerAbort)
+  }
   if (!res.ok) {
     let message = res.statusText
     try {

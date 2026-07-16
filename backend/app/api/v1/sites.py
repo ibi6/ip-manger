@@ -16,12 +16,13 @@ def list_sites(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> list[SiteOut]:
-    sites = db.scalars(select(Site).order_by(Site.id)).all()
-    result: list[SiteOut] = []
-    for s in sites:
-        cnt = db.scalar(select(func.count()).select_from(Subnet).where(Subnet.site_id == s.id)) or 0
-        result.append(site_out(s, subnet_count=cnt))
-    return result
+    rows = db.execute(
+        select(Site, func.count(Subnet.id))
+        .outerjoin(Subnet, Subnet.site_id == Site.id)
+        .group_by(Site.id)
+        .order_by(Site.id)
+    ).all()
+    return [site_out(site, subnet_count=int(subnet_count)) for site, subnet_count in rows]
 
 
 @router.post("", response_model=SiteOut, status_code=status.HTTP_201_CREATED)
@@ -32,9 +33,15 @@ def create_site(
 ) -> SiteOut:
     if not can_manage_network(user):
         raise HTTPException(status_code=403, detail="权限不足")
-    if db.scalar(select(Site).where(Site.code == body.code)):
+    code = body.code.upper()
+    if db.scalar(select(Site).where(Site.code == code)):
         raise HTTPException(status_code=400, detail="站点编码已存在")
-    site = Site(name=body.name, code=body.code, location=body.location, remark=body.remark)
+    site = Site(
+        name=body.name,
+        code=code,
+        location=body.location,
+        remark=body.remark,
+    )
     db.add(site)
     db.commit()
     db.refresh(site)

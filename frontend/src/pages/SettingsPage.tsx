@@ -5,16 +5,10 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import { SoftBadge } from '@/components/ui/Badge'
 import { Field, Input } from '@/components/ui/Input'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import { api, ApiError } from '@/lib/api'
-import { roleLabel } from '@/lib/labels'
-
-const accounts = [
-  { username: 'admin', role: 'admin', name: '陈启明', dept: '信息中心' },
-  { username: 'netadmin', role: 'network_admin', name: '林知微', dept: '信息中心' },
-  { username: 'biz', role: 'dept_user', name: '周景行', dept: '研发中心' },
-  { username: 'viewer', role: 'viewer', name: '苏晚晴', dept: '行政人事部' },
-] as const
+import { demoAccounts, roleLabel } from '@/lib/labels'
+import { productConfig } from '@/config/product'
 
 const matrix = [
   { code: 'subnet:write', admin: '✓', net: '✓', dept: '—', view: '—' },
@@ -82,7 +76,11 @@ export function SettingsPage() {
       />
 
       {toast ? (
-        <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2 text-sm text-teal-900">
+        <div
+          className="mb-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2 text-sm text-teal-900"
+          role="status"
+          aria-live="polite"
+        >
           {toast}
         </div>
       ) : null}
@@ -109,7 +107,7 @@ export function SettingsPage() {
               部门：{user?.departmentName}
             </div>
             <div className="text-xs text-muted">
-              登录用 JWT。本地接口一般是 http://127.0.0.1:8000，数据库是 SQLite 文件。
+              登录令牌仅保留在当前浏览器标签页；退出或关闭标签页后需要重新登录。
             </div>
           </CardBody>
         </Card>
@@ -126,13 +124,14 @@ export function SettingsPage() {
                   required
                 />
               </Field>
-              <Field label="新密码（至少 6 位）">
+              <Field label="新密码（至少 12 位，含字母、数字和特殊字符）">
                 <Input
                   type="password"
                   value={newPwd}
                   onChange={(e) => setNewPwd(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={12}
+                  maxLength={128}
                 />
               </Field>
               <Field label="再输入一次新密码">
@@ -141,7 +140,8 @@ export function SettingsPage() {
                   value={newPwd2}
                   onChange={(e) => setNewPwd2(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={12}
+                  maxLength={128}
                 />
               </Field>
               <Button type="submit" disabled={pwdBusy}>
@@ -151,10 +151,11 @@ export function SettingsPage() {
           </CardBody>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader title="演示账号" subtitle="密码均为 ChangeMe123!（仅作业环境）" />
-          <CardBody className="grid gap-2 sm:grid-cols-2">
-            {accounts.map((u) => (
+        {productConfig.showDemoAccounts ? (
+          <Card className="lg:col-span-2">
+            <CardHeader title="演示账号" subtitle="仅在开发或显式演示模式显示；初始密码见 README" />
+            <CardBody className="grid gap-2 sm:grid-cols-2">
+            {demoAccounts.map((u) => (
               <div
                 key={u.username}
                 className="flex items-center justify-between rounded-xl border border-line px-3 py-2"
@@ -162,14 +163,15 @@ export function SettingsPage() {
                 <div>
                   <div className="text-sm font-medium">{u.username}</div>
                   <div className="text-xs text-muted">
-                    {u.name} · {u.dept}
+                    {u.name}
                   </div>
                 </div>
                 <SoftBadge>{roleLabel[u.role]}</SoftBadge>
               </div>
             ))}
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        ) : null}
       </div>
 
       <Card className="mt-6">
@@ -274,17 +276,6 @@ export function SettingsPage() {
         </div>
       </Card>
 
-      <Card className="mt-6">
-        <CardHeader title="怎么运行" />
-        <CardBody>
-          <ul className="list-inside list-disc space-y-2 text-sm text-ink-800">
-            <li>后端：在 backend 目录用 uvicorn 跑 8000 端口</li>
-            <li>前端：在 frontend 目录 npm run dev</li>
-            <li>也可以在项目根目录 docker compose up --build</li>
-            <li>接口文档：http://127.0.0.1:8000/docs</li>
-          </ul>
-        </CardBody>
-      </Card>
     </div>
   )
 }

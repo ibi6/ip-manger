@@ -62,12 +62,13 @@
 
 | 领域 | 能力 |
 |------|------|
-| **认证权限** | JWT 登录 · 四角色 · 修改密码 · 登录限流 |
+| **认证权限** | 可撤销 JWT · 四角色 · 强密码 · 失败登录限流 |
 | **拓扑规划** | 站点 · 子网（CIDR）· 自动生成地址池 |
 | **地址生命周期** | 分配 · 预留 · 回收 · 禁用 · 启用 · 一键下一空闲 |
 | **安全机制** | 网关/广播锁定 · 条件更新防双分配 · 子网先归档 |
 | **资产** | 设备台账 · MAC 唯一 · 分配时绑定设备 |
 | **运维** | 看板统计 · 操作日志 · 冲突记录 · CSV 导入导出 |
+| **体验** | 浅色 · 深色 · 跟随系统主题 · 移动端抽屉 · 无障碍交互 |
 | **工程** | OpenAPI `/docs` · Docker Compose · pytest · GitHub Actions |
 
 ### 角色一览
@@ -87,7 +88,7 @@
 |------|------|
 | 后端 | **Python 3.11+** · FastAPI · SQLAlchemy 2 · JWT · bcrypt |
 | 前端 | **React 19** · TypeScript · Vite · Tailwind CSS |
-| 数据 | 演示 **SQLite**，可迁 **MySQL / PostgreSQL**（见 `docs/schema.sql`） |
+| 数据 | 单机 **SQLite**，生产可用 **PostgreSQL**（Alembic 迁移） |
 | 部署 | Docker Compose · Nginx 反代前端 |
 | 质量 | pytest · GitHub Actions CI |
 
@@ -107,7 +108,7 @@
         │                    ├─ 分配/回收 + 审计日志
         │                    └─ 统计聚合
         ▼
-   SQLite（演示）/ MySQL / PostgreSQL
+   SQLite（单节点）/ PostgreSQL
 ```
 
 详细说明：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -127,6 +128,8 @@
 | 用户管理 | `/users`（管理员） |
 | 设置 / 改密 / CSV | `/settings` |
 
+登录页右上角和工作台顶栏均可切换 **跟随系统 → 浅色 → 深色**。偏好保存在当前浏览器中，刷新后继续生效；“跟随系统”会响应操作系统的外观变化。
+
 ---
 
 ## 🚀 快速开始
@@ -145,7 +148,7 @@ python -m venv .venv
 # macOS / Linux
 # source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -168,6 +171,8 @@ npm run dev
 ```bash
 docker compose up --build
 ```
+
+Compose 默认是本地演示模式。生产部署必须设置 `APP_ENV=production`、强 `SECRET_KEY`、`SEED_DEMO_DATA=false` 与一次性 `BOOTSTRAP_ADMIN_PASSWORD`，详见 [部署、备份与回滚](docs/DEPLOYMENT.md)。
 
 | 服务 | 地址 |
 |------|------|
@@ -192,7 +197,7 @@ make frontend   # 终端 2
 | `biz` | `ChangeMe123!` | 部门用户 |
 | `viewer` | `ChangeMe123!` | 只读 |
 
-> 仅用于演示，正式环境请立刻修改密码并配置强 `SECRET_KEY`。
+> 演示账号只会在开发/显式演示模式创建。生产空库不会生成默认账号，缺少强引导密码时会拒绝启动。
 
 ---
 
@@ -225,18 +230,23 @@ POST /api/v1/subnets/{id}/archive
 | 场景 | 建议 |
 |------|------|
 | 演示 / 实验 | SQLite + Compose 即可 |
-| 小团队内网 | 前置 HTTPS，配置 `SECRET_KEY`，收紧 CORS |
-| 生产方向 | 换 MySQL/Postgres，密钥托管，备份库，关闭默认演示账号 |
+| 小团队内网 | 前置 HTTPS，配置 `SECRET_KEY`，收紧 CORS，定期备份 |
+| 生产方向 | PostgreSQL，密钥托管，`SEED_DEMO_DATA=false`，恢复演练 |
 
-配置模板：[`backend/.env.example`](backend/.env.example)  
+Compose 配置模板：[`.env.example`](.env.example)；后端本地模板：[`backend/.env.example`](backend/.env.example)
 表结构：[`docs/schema.sql`](docs/schema.sql)
 
 ```env
 APP_ENV=production
 SECRET_KEY=<请换成足够长的随机串>
-DATABASE_URL=postgresql+psycopg2://user:pass@db:5432/netledger
+SEED_DEMO_DATA=false
+BOOTSTRAP_ADMIN_PASSWORD=<首次启动使用的强密码，成功后移除>
+DATABASE_URL=postgresql+psycopg://user:pass@db:5432/netledger
 CORS_ORIGINS=https://你的域名
 ```
+
+- 完整部署、备份、恢复和回滚：[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- 自动化、安全、UI 与用户验收：[docs/TESTING.md](docs/TESTING.md)
 
 ---
 
@@ -247,9 +257,9 @@ CORS_ORIGINS=https://你的域名
 | 地址列表 | 支持分页查询，避免一次拉全表到前端 |
 | 并发分配 | `UPDATE ... WHERE status='free'`，降低双人抢同一 IP |
 | 子网展开 | 对超大前缀做规模限制，防止一次插入过多 |
-| 看板统计 | 批量聚合，减少 N+1 |
+| 看板/站点统计 | 批量或分组聚合，避免 N+1 |
 
-具体数值随机器与数据库变化；SQLite 适合演示，不适合高并发多写。
+具体数值随机器与数据库变化；SQLite 适合单节点低并发，不适合高并发多写。多实例登录限流需接入 Redis 等共享存储。
 
 ---
 
@@ -268,17 +278,14 @@ CORS_ORIGINS=https://你的域名
 
 ## ❓ 常见问题
 
-**这是不是毕设作业仓库？**  
-实现上是完整的全栈 IPAM 应用，并按开源产品方式做了文档与工程规范。可用于学习、实验室和内网台账起步。
-
 **后端是不是 Python？**  
 是。**业务与 API 基于 Python + FastAPI**；页面是 React。
 
 **冲突扫描是真扫网吗？**  
 不是。`simulate-scan` 只生成演示用冲突记录，方便走处理流程。
 
-**能上 MySQL 吗？**  
-可以。参考 `docs/schema.sql`，修改 `DATABASE_URL` 即可。
+**生产数据库怎么选？**
+单节点可继续用 SQLite；多人并发写入建议 PostgreSQL。运行时已包含 psycopg 驱动，迁移由 Alembic 管理。
 
 **能替代 Infoblox 吗？**  
 不能对标完整商业 DDI。NetLedger 定位是 **轻量台账型 IPAM**，先解决「看得见、管得住、留得下痕」。

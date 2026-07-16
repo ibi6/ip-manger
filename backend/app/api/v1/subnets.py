@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -22,8 +22,8 @@ def _load_subnet(db: Session, subnet_id: int) -> Subnet | None:
 
 @router.get("", response_model=list[SubnetOut])
 def list_subnets(
-    site_id: int | None = None,
-    q: str | None = None,
+    site_id: int | None = Query(default=None, gt=0),
+    q: str | None = Query(default=None, max_length=100),
     include_archived: bool = False,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),

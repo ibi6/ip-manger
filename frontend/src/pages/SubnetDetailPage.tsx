@@ -8,7 +8,7 @@ import { SoftBadge, StatusBadge } from '@/components/ui/Badge'
 import { ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { Field, Input, Select } from '@/components/ui/Input'
 import { api, ApiError, type ApiDevice, type ApiIp, type ApiSubnet } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import type { DeviceType, IpStatus } from '@/types'
 import { deviceTypeLabel } from '@/lib/labels'
 

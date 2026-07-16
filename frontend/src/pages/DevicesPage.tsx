@@ -6,7 +6,7 @@ import { Field, Input, Select } from '@/components/ui/Input'
 import { SoftBadge } from '@/components/ui/Badge'
 import { EmptyState, ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { api, ApiError, type ApiDevice } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import { deviceTypeLabel } from '@/lib/labels'
 import type { DeviceType } from '@/types'
 

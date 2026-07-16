@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/conflicts")
 
 @router.get("", response_model=list[ConflictOut])
 def list_conflicts(
-    status: str | None = "open",
+    status: Literal["open", "resolved", "all"] = Query(default="open"),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> list[ConflictOut]:
@@ -68,7 +69,7 @@ def simulate_scan_conflicts(
         conflict_type="rogue_host",
         detail=f"【模拟】发现未登记主机尝试使用空闲地址 {free_ip.address}（非真实探测）",
         status="open",
-        detected_at=datetime.now(timezone.utc),
+        detected_at=datetime.now(UTC),
     )
     db.add(c)
     db.commit()

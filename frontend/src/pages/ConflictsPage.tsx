@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/Card'
 import { ConflictBadge, SoftBadge } from '@/components/ui/Badge'
 import { EmptyState, ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { api, ApiError, type ApiConflict } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
+import { formatDateTime } from '@/lib/format'
 import type { ConflictType } from '@/types'
 
 export function ConflictsPage() {
@@ -114,7 +115,7 @@ export function ConflictsPage() {
                   <div className="text-xs text-muted">{c.subnet_cidr}</div>
                   <p className="mt-1 text-sm text-ink-800">{c.detail}</p>
                   <div className="mt-1 text-[11px] text-muted">
-                    发现于 {c.detected_at.slice(0, 19).replace('T', ' ')}
+                    发现于 {formatDateTime(c.detected_at)}
                   </div>
                 </div>
                 {c.status === 'open' && canManageNetwork ? (

@@ -8,8 +8,9 @@ import { SoftBadge, StatusBadge } from '@/components/ui/Badge'
 import { ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { Field, Input, Select } from '@/components/ui/Input'
 import { api, ApiError, type ApiDevice, type ApiIp, type ApiLog } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import { deviceTypeLabel, ipStatusLabel } from '@/lib/labels'
+import { formatDateTime } from '@/lib/format'
 import type { DeviceType, IpStatus } from '@/types'
 
 export function AddressDetailPage() {
@@ -225,7 +226,7 @@ export function AddressDetailPage() {
                 ],
                 ['责任人', ip.owner_name ?? '—'],
                 ['部门', ip.department_name ?? '—'],
-                ['分配时间', ip.allocated_at?.slice(0, 19).replace('T', ' ') ?? '—'],
+                ['分配时间', formatDateTime(ip.allocated_at)],
                 ['到期日', ip.expire_at ?? '—'],
                 ['备注', ip.remark ?? '—'],
               ].map(([k, v]) => (
@@ -248,7 +249,7 @@ export function AddressDetailPage() {
                 <div key={l.id} className="rounded-xl border border-line px-3 py-2 text-sm">
                   <div className="font-medium">{l.action}</div>
                   <div className="text-xs text-muted">
-                    {l.operator_name} · {l.created_at.slice(0, 19).replace('T', ' ')}
+                    {l.operator_name} · {formatDateTime(l.created_at)}
                   </div>
                   <div className="mt-1 text-xs text-ink-700">{l.detail}</div>
                 </div>

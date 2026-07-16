@@ -8,7 +8,7 @@ import { Input, Select } from '@/components/ui/Input'
 import { StatusBadge } from '@/components/ui/Badge'
 import { EmptyState, ErrorBlock, LoadingBlock } from '@/components/ui/EmptyState'
 import { api, ApiError, type ApiIp, type ApiSubnet } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import type { IpStatus } from '@/types'
 import { deviceTypeLabel } from '@/lib/labels'
 

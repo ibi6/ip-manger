@@ -16,7 +16,7 @@
                  └─────────────────┬───────────────────┘
                                    │
                  ┌─────────────────▼───────────────────┐
-                 │     SQLite (demo) / MySQL / PG      │
+                 │      SQLite (single node) / PG      │
                  └─────────────────────────────────────┘
 ```
 
@@ -28,7 +28,7 @@
 | Schemas | `backend/app/schemas/*` | Request/response validation |
 | Services | `backend/app/services/*` | Domain rules (allocate, CIDR, stats) |
 | Models | `backend/app/models/*` | Persistence |
-| Core | `backend/app/core/*` | Config, security, middleware |
+| Core | `backend/app/core/*` | Config, password/JWT security, failure limiting, middleware |
 
 ## Domain invariants
 
@@ -48,13 +48,29 @@
 
 - SPA routes under `frontend/src/pages`  
 - API client: `frontend/src/lib/api.ts`  
-- Auth context + token storage: `frontend/src/lib/auth.tsx`  
+- Auth provider: `frontend/src/lib/auth-provider.tsx`; context hook: `auth-context.ts`
+- Bearer token storage is tab-scoped `sessionStorage`, not persistent local storage
+- Product/environment policy: `frontend/src/config/product.ts`
 
 ## Deployment topologies
 
 1. **Dev:** uvicorn + Vite  
-2. **Compose:** nginx SPA + API container + volume for SQLite  
-3. **Prod target:** reverse proxy TLS + managed Postgres + secret manager  
+2. **Compose:** hardened Nginx SPA + non-root API container + Alembic + SQLite volume
+3. **Production:** outer TLS proxy + managed PostgreSQL + secret manager; production bootstraps one explicit admin and never loads samples
+
+## Authentication sequence
+
+```text
+login request
+  -> check prior failure bucket
+  -> verify bcrypt credential
+  -> failure: record event / success: clear bucket
+  -> JWT(sub, exp, role, uid, ver)
+  -> protected request compares JWT ver with users.auth_version
+  -> password change increments auth_version and revokes old tokens
+```
+
+Uvicorn 的通用代理头解析在容器内显式关闭，避免任意直连方提前改写 `request.client`。应用默认忽略 `X-Forwarded-For`；仅当 `TRUST_PROXY_HEADERS=true` 时才采用代理链最右侧的合法 IP。Compose 开启该选项，因为公开路径固定为 Nginx → backend，且 Nginx 会覆盖客户端传入的转发链。多实例限流仍需 Redis 等共享存储。
 
 ## Extension points
 

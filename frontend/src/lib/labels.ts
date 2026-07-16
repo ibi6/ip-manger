@@ -30,8 +30,8 @@ export const conflictTypeLabel: Record<ConflictType, string> = {
 }
 
 export const demoAccounts = [
-  { username: 'admin', password: 'ChangeMe123!', role: 'admin' as Role, name: '陈启明' },
-  { username: 'netadmin', password: 'ChangeMe123!', role: 'network_admin' as Role, name: '林知微' },
-  { username: 'biz', password: 'ChangeMe123!', role: 'dept_user' as Role, name: '周景行' },
-  { username: 'viewer', password: 'ChangeMe123!', role: 'viewer' as Role, name: '苏晚晴' },
+  { username: 'admin', role: 'admin' as Role, name: '陈启明' },
+  { username: 'netadmin', role: 'network_admin' as Role, name: '林知微' },
+  { username: 'biz', role: 'dept_user' as Role, name: '周景行' },
+  { username: 'viewer', role: 'viewer' as Role, name: '苏晚晴' },
 ]

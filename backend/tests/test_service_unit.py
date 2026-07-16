@@ -1,4 +1,5 @@
 """Unit-level tests without HTTP."""
+
 from __future__ import annotations
 
 import os
@@ -6,6 +7,7 @@ import os
 os.environ.setdefault("SECRET_KEY", "test-secret-key-at-least-32-characters-long!!")
 os.environ.setdefault("APP_ENV", "development")
 
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -19,16 +21,17 @@ from app.services.ip_utils import parse_network
 
 
 def test_parse_network_rejects_huge():
-    try:
+    with pytest.raises(ValueError) as exc_info:
         parse_network("10.0.0.0/8")
-        assert False, "should reject"
-    except ValueError as e:
-        assert "1024" in str(e) or "前缀" in str(e) or "展开" in str(e)
+    message = str(exc_info.value)
+    assert "1024" in message or "前缀" in message or "展开" in message
 
 
 def test_atomic_allocate_unit():
     get_settings.cache_clear()
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
     Session = sessionmaker(bind=engine)
     Base.metadata.create_all(engine)
     db = Session()
@@ -58,7 +61,9 @@ def test_atomic_allocate_unit():
     )
     db.add(subnet)
     db.flush()
-    ip = IpAddress(subnet_id=subnet.id, address="10.1.1.2", status="free", is_network_or_broadcast=False)
+    ip = IpAddress(
+        subnet_id=subnet.id, address="10.1.1.2", status="free", is_network_or_broadcast=False
+    )
     db.add(ip)
     db.commit()
 
@@ -69,11 +74,8 @@ def test_atomic_allocate_unit():
     ip = db.get(IpAddress, ip.id)
     assert ip.status == "allocated"
 
-    try:
+    with pytest.raises(ValueError):
         allocate_ip(db, ip, user, hostname="h2")
-        assert False
-    except ValueError:
-        pass
 
     release_ip(db, ip, user)
     db.commit()
