@@ -15,6 +15,7 @@
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-异步接口-009688?logo=fastapi&logoColor=white" />
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white" />
+  <img alt="Version" src="https://img.shields.io/badge/Version-2.0.0-0F766E" />
   <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
   <img alt="PRs" src="https://img.shields.io/badge/PRs-欢迎-brightgreen.svg" />
 </p>
@@ -33,6 +34,10 @@
   <a href="#-路线图">路线图</a> ·
   <a href="#-常见问题">FAQ</a>
 </p>
+
+---
+
+> **当前正式版本：V2.0.0。** 本次发布完成 UI、主题系统、安全、数据库迁移和部署链路升级。旧版保留在 `v1.5.0` 标签；如需恢复，可按 [部署文档](docs/DEPLOYMENT.md#5-版本回滚) 回退。
 
 ---
 

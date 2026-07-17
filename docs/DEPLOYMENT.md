@@ -107,6 +107,16 @@ pg_restore --clean --if-exists --no-owner --dbname $env:DATABASE_URL .\backups\n
 
 ## 5. 版本回滚
 
+V2 发布前的稳定版本保留在 `v1.5.0` 标签。代码回退示例：
+
+```powershell
+git fetch origin --tags
+git switch --detach v1.5.0
+docker compose up -d --build
+```
+
+恢复 V2 开发时执行 `git switch main`。生产环境回退前必须先备份数据库；代码标签不会自动恢复数据库数据。
+
 1. 记录当前镜像摘要与 `alembic current`。
 2. 创建数据库备份。
 3. 切换到上一个已验证 tag/commit 或镜像摘要。
