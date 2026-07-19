@@ -205,23 +205,23 @@ Expected: 越权请求 403，部门导出无跨部门数据，管理员路径不
 **Interfaces:**
 - Produces: CSV 仅接受 `.csv` 且 MIME 为 `text/csv`、`application/csv`、`application/vnd.ms-excel` 或 `application/octet-stream`；仅接受严格 UTF-8 BOM/UTF-8/GBK 文本；VLAN 必须为空或 `1..4094`。
 
-- [ ] **Step 1: 写无效 MIME、编码和 VLAN 测试**
+- [x] **Step 1: 写无效 MIME、编码和 VLAN 测试**
 
 分别上传伪装为 `.csv` 的 `image/png`、无法按 UTF-8/GBK 解码的字节、`vlan_id=abc` 与 `vlan_id=4095`，断言 400/415 且不创建子网。
 
-- [ ] **Step 2: 实施严格输入校验**
+- [x] **Step 2: 实施严格输入校验**
 
 读取文件前校验扩展名和 MIME；GBK 回退不使用 `errors="ignore"`；表头必须包含 `name,cidr,site_code`；VLAN 非空时必须是十进制且在范围内。
 
-- [ ] **Step 3: 避免内部异常泄露**
+- [x] **Step 3: 避免内部异常泄露**
 
 为 `io_csv` 建立模块 logger。未知异常执行 `logger.exception("CSV 第 %s 行导入失败", i)`，用户响应只返回 `第{i}行：服务器处理失败`，不拼接数据库或路径异常文本。
 
-- [ ] **Step 4: 保留 HTTP 异常响应头并记录未处理异常**
+- [x] **Step 4: 保留 HTTP 异常响应头并记录未处理异常**
 
 `http_exception_handler` 将 `exc.headers` 传给 `JSONResponse`；`unhandled_exception_handler` 使用 `logger.exception` 记录服务端堆栈，响应继续使用通用 500 文案。
 
-- [ ] **Step 5: 运行 CSV 与异常测试**
+- [x] **Step 5: 运行 CSV 与异常测试**
 
 Run: `backend\.venv\Scripts\python.exe -m pytest backend\tests\test_csv_security.py backend\tests\test_validation_and_sites.py -q`
 

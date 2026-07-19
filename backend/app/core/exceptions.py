@@ -1,7 +1,11 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+logger = logging.getLogger("ipam.exceptions")
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -10,7 +14,11 @@ def register_exception_handlers(app: FastAPI) -> None:
         detail = exc.detail
         if not isinstance(detail, str):
             detail = str(detail)
-        return JSONResponse(status_code=exc.status_code, content={"detail": detail})
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": detail},
+            headers=exc.headers,
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(_: Request, exc: RequestValidationError):
@@ -30,7 +38,15 @@ def register_exception_handlers(app: FastAPI) -> None:
         # Never swallow HTTPException (subclass of Exception in some stacks)
         if isinstance(exc, StarletteHTTPException):
             detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
-            return JSONResponse(status_code=exc.status_code, content={"detail": detail})
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": detail},
+                headers=exc.headers,
+            )
+        logger.error(
+            "未处理的服务器异常",
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
         return JSONResponse(
             status_code=500,
             content={"detail": "服务器内部错误，请稍后重试或查看服务日志"},

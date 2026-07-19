@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
@@ -15,8 +16,18 @@ from app.schemas.common import Message
 from app.services.subnet_service import create_subnet_with_pool
 
 router = APIRouter(prefix="/io", tags=["import-export"])
+logger = logging.getLogger("ipam.csv")
 MAX_CSV_BYTES = 2 * 1024 * 1024
 MAX_CSV_ROWS = 100
+ALLOWED_CSV_CONTENT_TYPES = frozenset(
+    {
+        "text/csv",
+        "application/csv",
+        "application/vnd.ms-excel",
+        "application/octet-stream",
+    }
+)
+REQUIRED_SUBNET_COLUMNS = frozenset({"name", "cidr", "site_code"})
 
 
 def _safe_csv_cell(value: str) -> str:
@@ -51,11 +62,7 @@ def export_subnets(
     stmt = select(Subnet).options(joinedload(Subnet.site), joinedload(Subnet.department))
     if user.role == "dept_user":
         stmt = stmt.where(Subnet.department_id == user.department_id)
-    subnets = (
-        db.scalars(stmt.order_by(Subnet.id))
-        .unique()
-        .all()
-    )
+    subnets = db.scalars(stmt.order_by(Subnet.id)).unique().all()
     rows: list[list[str]] = [
         [
             "id",
@@ -210,6 +217,8 @@ async def import_subnets(
         raise HTTPException(status_code=403, detail="权限不足")
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="请上传 .csv 文件")
+    if file.content_type not in ALLOWED_CSV_CONTENT_TYPES:
+        raise HTTPException(status_code=415, detail="文件类型不受支持，请上传 CSV 文件")
 
     raw = await file.read(MAX_CSV_BYTES + 1)
     if len(raw) > MAX_CSV_BYTES:
@@ -217,11 +226,19 @@ async def import_subnets(
     try:
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
-        text = raw.decode("gbk", errors="ignore")
+        try:
+            text = raw.decode("gbk")
+        except UnicodeDecodeError as exc:
+            raise HTTPException(status_code=400, detail="CSV 编码必须为 UTF-8 或 GBK") from exc
 
     reader = csv.DictReader(io.StringIO(text))
     if not reader.fieldnames:
         raise HTTPException(status_code=400, detail="CSV 为空或缺少表头")
+    normalized_columns = {column.strip().lower() for column in reader.fieldnames if column}
+    missing_columns = REQUIRED_SUBNET_COLUMNS - normalized_columns
+    if missing_columns:
+        missing_text = ",".join(sorted(missing_columns))
+        raise HTTPException(status_code=400, detail=f"CSV 缺少必填表头：{missing_text}")
     records = list(reader)
     if len(records) > MAX_CSV_ROWS:
         raise HTTPException(status_code=400, detail=f"单次最多导入 {MAX_CSV_ROWS} 行")
@@ -244,7 +261,13 @@ async def import_subnets(
             skipped += 1
             continue
         vlan_raw = (row.get("vlan_id") or "").strip()
-        vlan_id = int(vlan_raw) if vlan_raw.isdigit() else None
+        vlan_id: int | None = None
+        if vlan_raw:
+            if not vlan_raw.isdigit() or not 1 <= int(vlan_raw) <= 4094:
+                errors.append(f"第{i}行：VLAN ID 必须是 1–4094 的整数")
+                skipped += 1
+                continue
+            vlan_id = int(vlan_raw)
         try:
             create_subnet_with_pool(
                 db,
@@ -263,9 +286,10 @@ async def import_subnets(
             db.rollback()
             errors.append(f"第{i}行：{exc}")
             skipped += 1
-        except Exception as exc:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             db.rollback()
-            errors.append(f"第{i}行：{exc}")
+            logger.exception("CSV 第 %s 行导入失败", i)
+            errors.append(f"第{i}行：服务器处理失败")
             skipped += 1
 
     msg = f"导入完成：成功 {created}，跳过 {skipped}"
