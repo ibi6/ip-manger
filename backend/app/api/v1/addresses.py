@@ -5,6 +5,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import can_allocate, can_manage_network, get_current_user
+from app.core.exceptions import require_persisted
 from app.db.session import get_db
 from app.models import AllocationLog, IpAddress, Subnet, User
 from app.schemas.common import (
@@ -173,8 +174,7 @@ def allocate(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    ip = _load_ip(db, ip_id)
-    assert ip is not None
+    ip = require_persisted(_load_ip(db, ip_id), "地址")
     return ip_out(ip)
 
 
@@ -195,8 +195,7 @@ def release(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    ip = _load_ip(db, ip_id)
-    assert ip is not None
+    ip = require_persisted(_load_ip(db, ip_id), "地址")
     return ip_out(ip)
 
 
@@ -219,8 +218,7 @@ def reserve(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    ip = _load_ip(db, ip_id)
-    assert ip is not None
+    ip = require_persisted(_load_ip(db, ip_id), "地址")
     return ip_out(ip)
 
 
@@ -269,8 +267,7 @@ def disable(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    ip = _load_ip(db, ip_id)
-    assert ip is not None
+    ip = require_persisted(_load_ip(db, ip_id), "地址")
     return ip_out(ip)
 
 
@@ -291,8 +288,7 @@ def enable(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    ip = _load_ip(db, ip_id)
-    assert ip is not None
+    ip = require_persisted(_load_ip(db, ip_id), "地址")
     return ip_out(ip)
 
 
@@ -330,8 +326,7 @@ def allocate_next_free(
 
     ip = candidate
     # 重新带全关系，后面锁检查要用 gateway
-    ip = _load_ip(db, ip.id)
-    assert ip is not None
+    ip = require_persisted(_load_ip(db, ip.id), "地址")
     try:
         ip_service.allocate_ip(
             db,
@@ -352,8 +347,7 @@ def allocate_next_free(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    ip = _load_ip(db, ip.id)
-    assert ip is not None
+    ip = require_persisted(_load_ip(db, ip.id), "地址")
     return ip_out(ip)
 
 

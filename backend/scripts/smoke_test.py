@@ -1,4 +1,5 @@
 """API smoke / regression tests. Run with backend up on :8000."""
+
 from __future__ import annotations
 
 import json
@@ -29,7 +30,9 @@ def req(method: str, path: str, token: str | None = None, body: dict | None = No
 
 
 def login(user: str) -> str:
-    code, data = req("POST", "/api/v1/auth/login", body={"username": user, "password": "ChangeMe123!"})
+    code, data = req(
+        "POST", "/api/v1/auth/login", body={"username": user, "password": "ChangeMe123!"}
+    )
     assert code == 200, data
     return data["access_token"]
 
@@ -48,7 +51,9 @@ def main() -> int:
     biz = login("biz")
     viewer = login("viewer")
 
-    code, _ = req("POST", "/api/v1/subnets", viewer, {"name": "x", "cidr": "10.77.1.0/28", "site_id": 1})
+    code, _ = req(
+        "POST", "/api/v1/subnets", viewer, {"name": "x", "cidr": "10.77.1.0/28", "site_id": 1}
+    )
     check("viewer cannot create subnet", code == 403, code)
 
     code, subs = req("GET", "/api/v1/subnets", admin)
@@ -56,7 +61,9 @@ def main() -> int:
     own = next(s for s in subs if s["department_name"] == "研发中心")
     other = next(s for s in subs if s["department_name"] != "研发中心")
 
-    code, free_other = req("GET", f"/api/v1/ip-addresses?subnet_id={other['id']}&status=free", admin)
+    code, free_other = req(
+        "GET", f"/api/v1/ip-addresses?subnet_id={other['id']}&status=free", admin
+    )
     target_other = next(i for i in free_other if not i["is_network_or_broadcast"])
     code, _ = req(
         "POST",
@@ -74,7 +81,9 @@ def main() -> int:
         biz,
         {"hostname": "biz-ok", "device_name": "nb"},
     )
-    check("biz can allocate own dept", code == 200 and alloc["status"] == "allocated", (code, alloc))
+    check(
+        "biz can allocate own dept", code == 200 and alloc["status"] == "allocated", (code, alloc)
+    )
 
     code, _ = req("POST", f"/api/v1/ip-addresses/{target_own['id']}/release", biz)
     check("biz cannot release", code == 403, code)
@@ -113,9 +122,13 @@ def main() -> int:
     )
     check("reject bad expire", code == 400, (code, data))
 
-    code, data = req("POST", f"/api/v1/ip-addresses/{free2['id']}/allocate", admin, {"hostname": "once"})
+    code, data = req(
+        "POST", f"/api/v1/ip-addresses/{free2['id']}/allocate", admin, {"hostname": "once"}
+    )
     check("allocate once", code == 200, (code, data))
-    code, data = req("POST", f"/api/v1/ip-addresses/{free2['id']}/allocate", admin, {"hostname": "twice"})
+    code, data = req(
+        "POST", f"/api/v1/ip-addresses/{free2['id']}/allocate", admin, {"hostname": "twice"}
+    )
     check("reject double allocate", code == 400, (code, data))
     req("POST", f"/api/v1/ip-addresses/{free2['id']}/release", admin)
 

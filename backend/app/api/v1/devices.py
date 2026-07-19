@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import can_manage_network, get_current_user
 from app.core.constants import VALID_DEVICE_TYPES
+from app.core.exceptions import require_persisted
 from app.db.session import get_db
 from app.models import Department, Device, User
 from app.schemas.common import DeviceCreate, DeviceOut, DeviceUpdate
@@ -100,8 +101,7 @@ def create_device(
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="MAC 地址已被其他设备使用") from exc
-    dev = _load(db, dev.id)
-    assert dev is not None
+    dev = require_persisted(_load(db, dev.id), "设备")
     return device_out(dev)
 
 
@@ -150,8 +150,7 @@ def update_device(
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="设备更新违反唯一性或外键约束") from exc
-    dev = _load(db, device_id)
-    assert dev is not None
+    dev = require_persisted(_load(db, device_id), "设备")
     return device_out(dev)
 
 

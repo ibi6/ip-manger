@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_user
 from app.core.constants import VALID_ROLES
+from app.core.exceptions import require_persisted
 from app.core.security import hash_password
 from app.db.session import get_db
 from app.models import Department, User
@@ -92,8 +93,10 @@ def create_user(
     )
     db.add(user)
     db.commit()
-    user = db.scalar(select(User).options(joinedload(User.department)).where(User.id == user.id))
-    assert user is not None
+    user = require_persisted(
+        db.scalar(select(User).options(joinedload(User.department)).where(User.id == user.id)),
+        "用户",
+    )
     return user_out(user)
 
 
@@ -133,6 +136,8 @@ def update_user(
         user.auth_version += 1
 
     db.commit()
-    user = db.scalar(select(User).options(joinedload(User.department)).where(User.id == user_id))
-    assert user is not None
+    user = require_persisted(
+        db.scalar(select(User).options(joinedload(User.department)).where(User.id == user_id)),
+        "用户",
+    )
     return user_out(user)

@@ -3,6 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import can_manage_network, get_current_user
+from app.core.exceptions import require_persisted
 from app.db.session import get_db
 from app.models import IpAddress, Subnet, User
 from app.schemas.common import Message, SubnetCreate, SubnetOut
@@ -88,8 +89,7 @@ def create_subnet(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    subnet = _load_subnet(db, subnet.id)
-    assert subnet is not None
+    subnet = require_persisted(_load_subnet(db, subnet.id), "子网")
     return subnet_out(db, subnet)
 
 

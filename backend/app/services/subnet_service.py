@@ -83,5 +83,6 @@ def create_subnet_with_pool(
         .options(joinedload(Subnet.site), joinedload(Subnet.department))
         .where(Subnet.id == subnet.id)
     )
-    assert subnet is not None
+    if subnet is None:
+        raise RuntimeError("子网写入后无法重新加载")
     return subnet

@@ -1,11 +1,21 @@
 import logging
+from typing import TypeVar
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger("ipam.exceptions")
+T = TypeVar("T")
+
+
+def require_persisted(entity: T | None, resource: str) -> T:
+    """Fail closed when a committed entity cannot be reloaded."""
+    if entity is None:
+        logger.error("%s 写入后无法重新加载", resource)
+        raise HTTPException(status_code=500, detail="数据状态异常，请重试")
+    return entity
 
 
 def register_exception_handlers(app: FastAPI) -> None:

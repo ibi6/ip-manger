@@ -8,10 +8,12 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-at-least-32-characters-long
 os.environ.setdefault("APP_ENV", "development")
 
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core import exceptions
 from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.base import Base
@@ -25,6 +27,19 @@ def test_parse_network_rejects_huge():
         parse_network("10.0.0.0/8")
     message = str(exc_info.value)
     assert "1024" in message or "前缀" in message or "展开" in message
+
+
+def test_require_persisted_rejects_missing_reload():
+    helper = getattr(exceptions, "require_persisted", None)
+    assert helper is not None
+    marker = object()
+    assert helper(marker, "测试资源") is marker
+
+    with pytest.raises(HTTPException) as exc_info:
+        helper(None, "测试资源")
+
+    assert exc_info.value.status_code == 500
+    assert "数据状态异常" in exc_info.value.detail
 
 
 def test_atomic_allocate_unit():

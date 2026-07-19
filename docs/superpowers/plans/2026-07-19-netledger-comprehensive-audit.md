@@ -274,11 +274,11 @@ Expected: 分页/搜索正确，分配并发保护和生命周期行为不变。
 **Interfaces:**
 - Produces: `require_persisted(entity, resource) -> entity`，在提交后实体意外消失时记录错误并返回稳定 500，而不是依赖会被 `python -O` 删除的 assert。
 
-- [ ] **Step 1: 增加持久化不变量测试**
+- [x] **Step 1: 增加持久化不变量测试**
 
 直接调用 `require_persisted(None, "地址")`，断言抛出 500 HTTPException 且文案不含 SQL/路径；非空实体原样返回。
 
-- [ ] **Step 2: 实现并替换 13 处生产 assert**
+- [x] **Step 2: 实现并替换 13 处生产 assert**
 
 ```python
 def require_persisted(entity: T | None, resource: str) -> T:
@@ -290,11 +290,11 @@ def require_persisted(entity: T | None, resource: str) -> T:
 
 所有 API 与服务重载位置使用此函数或等价显式 `RuntimeError`，不保留生产 `assert`。
 
-- [ ] **Step 3: 修复 Ruff 格式门禁**
+- [x] **Step 3: 修复 Ruff 格式门禁**
 
 Run: `backend\.venv\Scripts\python.exe -m ruff format backend\scripts\smoke_test.py`
 
-- [ ] **Step 4: 执行源码安全和格式检查**
+- [x] **Step 4: 执行源码安全和格式检查**
 
 Run:
 
