@@ -237,23 +237,23 @@ Expected: 所有恶意或损坏输入被拒绝，响应不泄露内部异常。
 **Interfaces:**
 - Produces: `_ip_query(db, user, subnet_id, status, q) -> Select`；分页接口以 SQL `COUNT/LIMIT/OFFSET` 返回相同 `IpListPage` 契约。
 
-- [ ] **Step 1: 写稳定分页与搜索测试**
+- [x] **Step 1: 写稳定分页与搜索测试**
 
 创建至少两个子网，验证 page 1/page 2 无重复、`total` 正确、责任人和 MAC 搜索仍能命中，部门用户搜索不越权。
 
-- [ ] **Step 2: 构建 SQL 查询**
+- [x] **Step 2: 构建 SQL 查询**
 
 使用 SQLAlchemy `or_` 与 `ilike` 过滤 address/hostname/mac/device_name/owner display name；部门用户通过 Subnet join 加范围条件。按 `IpAddress.subnet_id, IpAddress.id` 稳定排序，因为地址池按数字顺序创建。
 
-- [ ] **Step 3: 下推分页**
+- [x] **Step 3: 下推分页**
 
 `list_ips_page` 使用 count 子查询和 `offset((page - 1) * page_size).limit(page_size)`；兼容数组接口使用相同查询与最大 500 条限制，不再把全部地址载入 Python。
 
-- [ ] **Step 4: 优化下一空闲地址查询**
+- [x] **Step 4: 优化下一空闲地址查询**
 
 将候选地址查询改为 `order_by(IpAddress.id).limit(1)`，保留条件更新防并发双分配。
 
-- [ ] **Step 5: 运行地址生命周期回归**
+- [x] **Step 5: 运行地址生命周期回归**
 
 Run: `backend\.venv\Scripts\python.exe -m pytest backend\tests\test_page_and_mac.py backend\tests\test_ip_lifecycle.py backend\tests\test_service_unit.py -q`
 

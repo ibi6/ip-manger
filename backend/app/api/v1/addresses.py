@@ -1,7 +1,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import can_allocate, can_manage_network, get_current_user
@@ -22,13 +22,6 @@ from app.services.serializers import ip_out, log_out
 router = APIRouter()
 
 
-def _ip_sort_key(address: str) -> tuple[int, ...]:
-    try:
-        return tuple(int(p) for p in address.split("."))
-    except ValueError:
-        return (999, 999, 999, 999)
-
-
 def _load_ip(db: Session, ip_id: int) -> IpAddress | None:
     return db.scalar(
         select(IpAddress)
@@ -42,41 +35,57 @@ def _load_ip(db: Session, ip_id: int) -> IpAddress | None:
     )
 
 
-def _query_ips(
-    db: Session,
+def _ip_query(
     user: User,
     *,
     subnet_id: int | None,
     status: str | None,
     q: str | None,
-) -> list[IpAddress]:
-    stmt = select(IpAddress).options(
-        joinedload(IpAddress.subnet),
-        joinedload(IpAddress.owner),
-        joinedload(IpAddress.department),
-    )
+) -> Select[tuple[IpAddress]]:
+    stmt = select(IpAddress)
     if subnet_id is not None:
         stmt = stmt.where(IpAddress.subnet_id == subnet_id)
     if status:
         stmt = stmt.where(IpAddress.status == status)
     if user.role == "dept_user":
         stmt = stmt.join(Subnet).where(Subnet.department_id == user.department_id)
-
-    # 字符串排序对 IP 不友好，取出来再按数字排
-    ips = list(db.scalars(stmt).unique().all())
     if q:
-        ql = q.lower()
-        ips = [
-            ip
-            for ip in ips
-            if ql in ip.address.lower()
-            or ql in (ip.hostname or "").lower()
-            or ql in (ip.mac or "").lower()
-            or ql in (ip.device_name or "").lower()
-            or (ip.owner and ql in ip.owner.display_name.lower())
-        ]
-    ips.sort(key=lambda x: _ip_sort_key(x.address))
-    return ips
+        pattern = f"%{q.strip()}%"
+        stmt = stmt.outerjoin(User, IpAddress.owner_user_id == User.id).where(
+            or_(
+                IpAddress.address.ilike(pattern),
+                IpAddress.hostname.ilike(pattern),
+                IpAddress.mac.ilike(pattern),
+                IpAddress.device_name.ilike(pattern),
+                User.display_name.ilike(pattern),
+            )
+        )
+    return stmt
+
+
+def _paged_ip_rows(
+    db: Session,
+    stmt: Select[tuple[IpAddress]],
+    *,
+    page: int,
+    page_size: int,
+) -> list[IpAddress]:
+    paged = (
+        stmt.options(
+            joinedload(IpAddress.subnet),
+            joinedload(IpAddress.owner),
+            joinedload(IpAddress.department),
+        )
+        .order_by(IpAddress.subnet_id, IpAddress.id)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    return list(db.scalars(paged).unique().all())
+
+
+def _ip_count(db: Session, stmt: Select[tuple[IpAddress]]) -> int:
+    ids = stmt.with_only_columns(IpAddress.id, maintain_column_froms=True).order_by(None).subquery()
+    return int(db.scalar(select(func.count()).select_from(ids)) or 0)
 
 
 @router.get("/ip-addresses", response_model=list[IpOut])
@@ -90,9 +99,9 @@ def list_ips(
     user: User = Depends(get_current_user),
 ) -> list[IpOut]:
     """兼容旧前端：仍返回数组，但支持 page / page_size。"""
-    ips = _query_ips(db, user, subnet_id=subnet_id, status=status, q=q)
-    start = (page - 1) * page_size
-    return [ip_out(ip) for ip in ips[start : start + page_size]]
+    stmt = _ip_query(user, subnet_id=subnet_id, status=status, q=q)
+    ips = _paged_ip_rows(db, stmt, page=page, page_size=page_size)
+    return [ip_out(ip) for ip in ips]
 
 
 @router.get("/ip-addresses/page", response_model=IpListPage)
@@ -105,10 +114,9 @@ def list_ips_page(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> IpListPage:
-    ips = _query_ips(db, user, subnet_id=subnet_id, status=status, q=q)
-    total = len(ips)
-    start = (page - 1) * page_size
-    chunk = ips[start : start + page_size]
+    stmt = _ip_query(user, subnet_id=subnet_id, status=status, q=q)
+    total = _ip_count(db, stmt)
+    chunk = _paged_ip_rows(db, stmt, page=page, page_size=page_size)
     return IpListPage(
         items=[ip_out(ip) for ip in chunk],
         total=total,
@@ -306,7 +314,7 @@ def allocate_next_free(
     if user.role == "dept_user" and subnet.department_id != user.department_id:
         raise HTTPException(status_code=403, detail="只能分配本部门子网地址")
 
-    candidates = db.scalars(
+    candidate = db.scalar(
         select(IpAddress)
         .options(joinedload(IpAddress.subnet))
         .where(
@@ -314,12 +322,13 @@ def allocate_next_free(
             IpAddress.status == "free",
             IpAddress.is_network_or_broadcast.is_(False),
         )
-    ).all()
-    candidates = sorted(candidates, key=lambda x: _ip_sort_key(x.address))
-    if not candidates:
+        .order_by(IpAddress.id)
+        .limit(1)
+    )
+    if not candidate:
         raise HTTPException(status_code=400, detail="该子网没有可用空闲地址")
 
-    ip = candidates[0]
+    ip = candidate
     # 重新带全关系，后面锁检查要用 gateway
     ip = _load_ip(db, ip.id)
     assert ip is not None
