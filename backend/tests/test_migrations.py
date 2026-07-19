@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from sqlalchemy import create_engine, inspect, text
@@ -16,6 +17,8 @@ def test_prepare_database_upgrades_an_empty_database(tmp_path, monkeypatch):
     monkeypatch.chdir(backend_root)
     monkeypatch.setenv("DATABASE_URL", database_url)
     get_settings.cache_clear()
+    exception_logger = logging.getLogger("ipam.exceptions")
+    exception_logger.disabled = False
 
     try:
         prepare_database()
@@ -30,6 +33,7 @@ def test_prepare_database_upgrades_an_empty_database(tmp_path, monkeypatch):
         )
         with engine.connect() as connection:
             assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0002"
+        assert exception_logger.disabled is False
         engine.dispose()
     finally:
         get_settings.cache_clear()

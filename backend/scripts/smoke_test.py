@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 
-BASE = "http://127.0.0.1:8000"
+BASE = os.getenv("NETLEDGER_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
 
 def req(method: str, path: str, token: str | None = None, body: dict | None = None):

@@ -5,6 +5,25 @@ All notable changes to **NetLedger** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Server-side logout that immediately revokes previously issued access tokens
+- Dedicated 403 and 404 application pages with an administrator-only `/users` route guard
+- Regression coverage for SQL pagination, department data scope, CSV validation, request errors, and selection states
+
+### Changed
+- Address filtering, stable sorting, counts, and pagination now execute in SQL
+- Frontend JSON, upload, and download requests share authentication, timeout, network-error, and 401 handling
+- CSV imports enforce file type, 2 MiB/100-row limits, strict text decoding, required headers, and VLAN ranges
+- JWT handling now uses maintained dependencies and includes issued-at and unique token identifiers
+
+### Fixed
+- Department users can no longer bind devices or export records outside their department scope
+- Internal exception details are logged server-side without being exposed to API clients
+- Alembic migrations no longer disable existing application loggers in long-running processes or tests
+- Address search no longer races with the previous page, and bulk-selection checkboxes expose correct accessible state
+
 ## [2.0.0] - 2026-07-17
 
 ### Added

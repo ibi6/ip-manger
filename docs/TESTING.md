@@ -8,7 +8,13 @@
 cd backend
 python -m pip install -r requirements-dev.txt
 ruff check app tests alembic
+ruff format --check app tests alembic scripts
 python -m pytest -q
+bandit -r app -q
+
+# Windows 中文路径下建议先启用 Python UTF-8 模式
+$env:PYTHONUTF8 = "1"
+pip-audit -r requirements.txt
 ```
 
 前端：
@@ -70,11 +76,18 @@ python scripts/smoke_test.py
 curl.exe -i http://127.0.0.1:8000/health
 ```
 
+如需验收隔离端口，可覆盖冒烟测试地址：
+
+```powershell
+$env:NETLEDGER_BASE_URL = "http://127.0.0.1:8002"
+python scripts/smoke_test.py
+```
+
 健康响应必须同时满足：HTTP 200、`status=ok`、`database=up`、版本与发布版本一致，并包含 `X-Request-ID`。
 
 ## 4. UI 验收
 
-对 375×812、768×1024、1440×900 分别检查：
+对 375×812、768×1024、1024×768、1440×900、1920×1080 分别检查：
 
 1. 登录页不横向溢出；生产构建不显示演示账号入口。
 2. 用户名/密码 label 与输入框关联；错误信息使用 alert/live region。
@@ -84,6 +97,9 @@ curl.exe -i http://127.0.0.1:8000/health
 6. 所有按钮在手机端至少 44px；键盘焦点清晰；跳过导航可用。
 7. 站点、子网、地址、设备、冲突、用户、设置页面的空/加载/错误/成功状态可辨识。
 8. 修改密码前端最小长度为 12，后端继续执行完整复杂度校验。
+9. 非管理员直接访问 `/users` 显示 403；未知地址显示 404，均可返回工作台。
+10. 地址列表从第 2 页发起新搜索时只展示第 1 页结果；全选框正确呈现未选、部分选中和全选三态。
+11. 浅色、深色、跟随系统三种主题切换后刷新，偏好与可读性保持正确。
 
 可访问性快速检查：所有可见 `button`/`a` 有非空可访问名称；每个可见 `input`/`select`/`textarea` 可由 label 定位；标题层级不跳跃；颜色不是唯一状态信号。
 
