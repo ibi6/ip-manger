@@ -39,9 +39,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const logout = useCallback(() => {
-    setToken(null)
-    setUser(null)
+  const logout = useCallback(async () => {
+    let revoked = !getToken()
+    try {
+      if (!revoked) {
+        await api.logout()
+        revoked = true
+      }
+    } catch {
+      revoked = false
+    } finally {
+      setToken(null)
+      setUser(null)
+    }
+    return revoked
   }, [])
 
   const role = user?.role as Role | undefined

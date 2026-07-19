@@ -45,6 +45,19 @@ def me(user: User = Depends(get_current_user)) -> UserOut:
     return user_out(user)
 
 
+@router.post("/logout", response_model=Message)
+def logout(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Message:
+    db_user = db.get(User, user.id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    db_user.auth_version += 1
+    db.commit()
+    return Message(message="已安全退出")
+
+
 @router.post("/change-password", response_model=Message)
 def change_password(
     body: ChangePasswordRequest,

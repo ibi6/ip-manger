@@ -80,3 +80,19 @@ def test_production_secret_policy_cannot_be_bypassed_by_environment_flag():
 
     with pytest.raises(RuntimeError, match="生产环境必须设置足够长的 SECRET_KEY"):
         settings.resolve_secret_key()
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("access_token_expire_minutes", 0),
+        ("access_token_expire_minutes", 10081),
+        ("login_rate_limit", 0),
+        ("login_rate_limit", 1001),
+        ("login_rate_window_seconds", 0),
+        ("login_rate_window_seconds", 86401),
+    ],
+)
+def test_security_runtime_limits_are_bounded(field, value):
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **{field: value})

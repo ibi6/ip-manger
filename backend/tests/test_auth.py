@@ -48,6 +48,19 @@ def test_unauthorized(client):
     assert r.status_code == 401
 
 
+def test_logout_revokes_current_token(client):
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"username": "viewer", "password": "ChangeMe123!"},
+    )
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    logout = client.post("/api/v1/auth/logout", headers=headers)
+
+    assert logout.status_code == 200
+    assert client.get("/api/v1/auth/me", headers=headers).status_code == 401
+
+
 def test_login_rate_limit(client):
     # exhaust limit
     for _ in range(8):

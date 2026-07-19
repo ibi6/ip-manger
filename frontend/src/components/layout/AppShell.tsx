@@ -39,6 +39,7 @@ export function AppShell() {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [openConflicts, setOpenConflicts] = useState(0)
+  const [loggingOut, setLoggingOut] = useState(false)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   const nav = canAdmin
@@ -73,8 +74,10 @@ export function AppShell() {
 
   if (!user) return null
 
-  const performLogout = () => {
-    logout()
+  const performLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
+    await logout()
     setMobileOpen(false)
     navigate('/login', { replace: true })
   }
@@ -142,11 +145,13 @@ export function AppShell() {
         </div>
         <button
           type="button"
-          onClick={performLogout}
-          className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white/[0.07] px-3 text-xs text-white/70 transition hover:bg-white/[0.12] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300"
+          onClick={() => void performLogout()}
+          disabled={loggingOut}
+          aria-busy={loggingOut}
+          className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white/[0.07] px-3 text-xs text-white/70 transition hover:bg-white/[0.12] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 disabled:cursor-wait disabled:opacity-60"
         >
           <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-          退出登录
+          {loggingOut ? '安全退出中…' : '退出登录'}
         </button>
       </div>
     </div>

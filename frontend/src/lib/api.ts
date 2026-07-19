@@ -86,6 +86,7 @@ export const api = {
       body: JSON.stringify({ username, password }),
     }),
   me: () => request<ApiUser>('/auth/me'),
+  logout: () => request<{ message: string }>('/auth/logout', { method: 'POST' }),
   changePassword: (old_password: string, new_password: string) =>
     request<{ message: string }>('/auth/change-password', {
       method: 'POST',

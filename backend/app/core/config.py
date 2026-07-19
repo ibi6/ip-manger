@@ -55,7 +55,12 @@ class Settings(BaseSettings):
     app_env: str = Field(default="development", validation_alias="APP_ENV")
     # Empty = auto (dev file / production fail)
     secret_key: str = Field(default="", validation_alias="SECRET_KEY")
-    access_token_expire_minutes: int = 480
+    access_token_expire_minutes: int = Field(
+        default=480,
+        ge=1,
+        le=10080,
+        validation_alias="ACCESS_TOKEN_EXPIRE_MINUTES",
+    )
     algorithm: str = "HS256"
     database_url: str = "sqlite:///./ipam.db"
     cors_origins: str = (
@@ -63,8 +68,18 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175,"
         "http://localhost,http://127.0.0.1"
     )
-    login_rate_limit: int = 8  # attempts per window
-    login_rate_window_seconds: int = 60
+    login_rate_limit: int = Field(
+        default=8,
+        ge=1,
+        le=1000,
+        validation_alias="LOGIN_RATE_LIMIT",
+    )
+    login_rate_window_seconds: int = Field(
+        default=60,
+        ge=1,
+        le=86400,
+        validation_alias="LOGIN_RATE_WINDOW_SECONDS",
+    )
     trust_proxy_headers: bool = False
     seed_demo_data: bool | None = None
     bootstrap_admin_username: str = "admin"

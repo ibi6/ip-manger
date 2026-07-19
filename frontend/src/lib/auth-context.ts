@@ -6,7 +6,7 @@ export interface AuthContextValue {
   user: User | null
   loading: boolean
   login: (username: string, password: string) => Promise<{ ok: true } | { ok: false; message: string }>
-  logout: () => void
+  logout: () => Promise<boolean>
   isAuthenticated: boolean
   canManageNetwork: boolean
   canAllocate: boolean
