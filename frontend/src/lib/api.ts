@@ -1,9 +1,11 @@
-import { networkErrorMessage } from '@/lib/network-error'
+import {
+  apiErrorMessage,
+  networkErrorMessage,
+  normalizeRequestTimeout,
+} from '@/lib/network-error'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8000/api/v1'
-const configuredTimeout = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 15_000)
-const REQUEST_TIMEOUT_MS =
-  Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 15_000
+const REQUEST_TIMEOUT_MS = normalizeRequestTimeout(import.meta.env.VITE_API_TIMEOUT_MS)
 
 const TOKEN_KEY = 'netledger_access_token'
 const LEGACY_TOKEN_KEY = 'ipam_token'
@@ -27,9 +29,18 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+interface AuthorizedFetchOptions {
+  fallbackError?: string
+  isLoginRequest?: boolean
+}
+
+async function authorizedFetch(
+  url: string,
+  init: RequestInit = {},
+  options: AuthorizedFetchOptions = {},
+): Promise<Response> {
   const headers = new Headers(init.headers)
-  if (!headers.has('Content-Type') && init.body) {
+  if (!headers.has('Content-Type') && typeof init.body === 'string') {
     headers.set('Content-Type', 'application/json')
   }
   const token = getToken()
@@ -47,7 +58,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   let res: Response
   try {
-    res = await fetch(`${API_BASE}${path}`, { ...init, headers, signal: controller.signal })
+    res = await fetch(url, { ...init, headers, signal: controller.signal })
   } catch {
     throw new ApiError(0, networkErrorMessage(timedOut))
   } finally {
@@ -55,26 +66,29 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     init.signal?.removeEventListener('abort', onCallerAbort)
   }
   if (!res.ok) {
-    let message = res.statusText
+    let payload: unknown
     try {
-      const data = await res.json()
-      message = data.detail
-        ? typeof data.detail === 'string'
-          ? data.detail
-          : JSON.stringify(data.detail)
-        : message
+      payload = await res.json()
     } catch {
-      /* ignore */
+      payload = undefined
     }
     // Token expired / invalid — clear and send user to login
-    if (res.status === 401 && !path.includes('/auth/login')) {
+    if (res.status === 401 && !options.isLoginRequest) {
       setToken(null)
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
         window.location.assign('/login')
       }
     }
-    throw new ApiError(res.status, message)
+    const fallback = res.statusText || options.fallbackError || '请求失败'
+    throw new ApiError(res.status, apiErrorMessage(fallback, payload))
   }
+  return res
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await authorizedFetch(`${API_BASE}${path}`, init, {
+    isLoginRequest: path === '/auth/login',
+  })
   if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
@@ -202,40 +216,25 @@ export const api = {
     `${API_BASE}/io/export/ip-addresses${subnetId ? `?subnet_id=${subnetId}` : ''}`,
   templateSubnetsUrl: () => `${API_BASE}/io/template/subnets`,
   importSubnets: async (file: File) => {
-    const headers = new Headers()
-    const token = getToken()
-    if (token) headers.set('Authorization', `Bearer ${token}`)
     const form = new FormData()
     form.append('file', file)
-    const res = await fetch(`${API_BASE}/io/import/subnets`, {
+    const res = await authorizedFetch(`${API_BASE}/io/import/subnets`, {
       method: 'POST',
-      headers,
       body: form,
     })
-    if (!res.ok) {
-      let message = res.statusText
-      try {
-        const data = await res.json()
-        message = typeof data.detail === 'string' ? data.detail : message
-      } catch {
-        /* ignore */
-      }
-      throw new ApiError(res.status, message)
-    }
     return res.json() as Promise<{ message: string; data?: unknown }>
   },
   downloadAuth: async (url: string, filename: string) => {
-    const headers = new Headers()
-    const token = getToken()
-    if (token) headers.set('Authorization', `Bearer ${token}`)
-    const res = await fetch(url, { headers })
-    if (!res.ok) throw new ApiError(res.status, '下载失败')
+    const res = await authorizedFetch(url, {}, { fallbackError: '下载失败' })
     const blob = await res.blob()
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
+    const objectUrl = URL.createObjectURL(blob)
+    a.href = objectUrl
     a.download = filename
+    document.body.append(a)
     a.click()
-    URL.revokeObjectURL(a.href)
+    a.remove()
+    globalThis.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
   },
 }
 

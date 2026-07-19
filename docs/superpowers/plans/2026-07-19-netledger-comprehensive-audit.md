@@ -315,19 +315,19 @@ Expected: Bandit 无问题，Ruff lint/format 全通过。
 **Interfaces:**
 - Produces: 所有 JSON、上传与下载请求共享 Authorization、AbortController、15 秒超时、401 清理和网络错误文案。
 
-- [ ] **Step 1: 提取请求上下文辅助函数并补测试**
+- [x] **Step 1: 提取请求上下文辅助函数并补测试**
 
 为超时配置归一化、401 判断和错误消息提取建立可导出的纯函数，Node 测试覆盖无效超时值、JSON detail 与非 JSON 响应。
 
-- [ ] **Step 2: 统一 fetch 生命周期**
+- [x] **Step 2: 统一 fetch 生命周期**
 
 将超时、调用方 abort、Authorization 和 401 跳转放入一个底层 `authorizedFetch(pathOrUrl, init)`；`request`、`importSubnets`、`downloadAuth` 都通过它执行。
 
-- [ ] **Step 3: 修复对象 URL 生命周期**
+- [x] **Step 3: 修复对象 URL 生命周期**
 
 下载后将临时 `<a>` 插入 DOM、点击、移除，再在下一事件循环撤销 Object URL，确保 Firefox/Chromium 均能完成下载。
 
-- [ ] **Step 4: 执行前端单测与构建**
+- [x] **Step 4: 执行前端单测与构建**
 
 Run: `npm test -- --run && npm run lint && npm run build`（工作目录 `frontend`）
 
