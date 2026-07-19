@@ -23,6 +23,7 @@ frontend/.env.local
 # IDE / OS
 .idea/
 .vscode/
+.worktrees/
 *.swp
 .DS_Store
 Thumbs.db
