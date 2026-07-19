@@ -159,6 +159,9 @@ def allocate(
             remark=body.remark,
         )
         db.commit()
+    except PermissionError as exc:
+        db.rollback()
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -334,6 +337,9 @@ def allocate_next_free(
             remark=body.remark,
         )
         db.commit()
+    except PermissionError as exc:
+        db.rollback()
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -347,15 +353,17 @@ def list_logs(
     address: str | None = Query(default=None, max_length=50),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> list[LogOut]:
-    stmt = select(AllocationLog).order_by(AllocationLog.id.desc()).limit(limit)
-    if address:
+    stmt = select(AllocationLog)
+    if user.role == "dept_user":
         stmt = (
-            select(AllocationLog)
-            .where(AllocationLog.address == address)
-            .order_by(AllocationLog.id.desc())
-            .limit(limit)
+            stmt.join(IpAddress, AllocationLog.ip_address_id == IpAddress.id)
+            .join(Subnet, IpAddress.subnet_id == Subnet.id)
+            .where(Subnet.department_id == user.department_id)
         )
+    if address:
+        stmt = stmt.where(AllocationLog.address == address)
+    stmt = stmt.order_by(AllocationLog.id.desc()).limit(limit)
     logs = db.scalars(stmt).all()
     return [log_out(x) for x in logs]

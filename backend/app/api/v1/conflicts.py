@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import can_manage_network, get_current_user
 from app.db.session import get_db
-from app.models import Conflict, IpAddress, User
+from app.models import Conflict, IpAddress, Subnet, User
 from app.schemas.common import ConflictOut, Message
 from app.services.serializers import conflict_out
 
@@ -18,9 +18,15 @@ router = APIRouter(prefix="/conflicts")
 def list_conflicts(
     status: Literal["open", "resolved", "all"] = Query(default="open"),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> list[ConflictOut]:
     stmt = select(Conflict).order_by(Conflict.id.desc())
+    if user.role == "dept_user":
+        stmt = (
+            stmt.join(IpAddress, Conflict.ip_address_id == IpAddress.id)
+            .join(Subnet, IpAddress.subnet_id == Subnet.id)
+            .where(Subnet.department_id == user.department_id)
+        )
     if status and status != "all":
         stmt = stmt.where(Conflict.status == status)
     return [conflict_out(c) for c in db.scalars(stmt).all()]

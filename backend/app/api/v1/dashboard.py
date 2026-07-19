@@ -13,6 +13,6 @@ router = APIRouter()
 @router.get("/dashboard/overview", response_model=DashboardOut)
 def overview(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> DashboardOut:
-    return dashboard_out(db)
+    return dashboard_out(db, user)

@@ -16,3 +16,22 @@ def test_csv_import_rejects_oversized_upload(client):
     )
 
     assert response.status_code == 413
+
+
+def test_department_exports_do_not_leak_other_departments(client):
+    admin = auth_header(client, "admin")
+    biz = auth_header(client, "biz")
+    all_subnets = client.get("/api/v1/subnets", headers=admin).json()
+    other = next(subnet for subnet in all_subnets if subnet["department_name"] != "研发中心")
+    other_ip = client.get(
+        f"/api/v1/ip-addresses?subnet_id={other['id']}&page_size=1",
+        headers=admin,
+    ).json()[0]
+
+    subnet_export = client.get("/api/v1/io/export/subnets", headers=biz)
+    ip_export = client.get("/api/v1/io/export/ip-addresses", headers=biz)
+
+    assert subnet_export.status_code == 200
+    assert ip_export.status_code == 200
+    assert other["cidr"] not in subnet_export.text
+    assert other_ip["address"] not in ip_export.text

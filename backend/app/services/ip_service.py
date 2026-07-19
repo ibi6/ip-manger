@@ -85,6 +85,8 @@ def allocate_ip(
         dev = db.get(Device, device_id)
         if not dev:
             raise ValueError("设备不存在")
+        if operator.role == "dept_user" and dev.department_id != operator.department_id:
+            raise PermissionError("无权绑定其他部门设备")
         device_name = device_name or dev.name
         dtype = dev.device_type or dtype
         if not mac_norm and dev.mac:

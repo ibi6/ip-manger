@@ -196,15 +196,30 @@ def conflict_out(c: Conflict) -> ConflictOut:
     )
 
 
-def dashboard_out(db: Session) -> DashboardOut:
-    site_count = db.scalar(select(func.count()).select_from(Site)) or 0
-    subnet_count = (
-        db.scalar(select(func.count()).select_from(Subnet).where(Subnet.status == "active")) or 0
-    )
+def dashboard_out(db: Session, user: User) -> DashboardOut:
+    department_id = user.department_id if user.role == "dept_user" else None
+    if department_id is None:
+        site_count = db.scalar(select(func.count()).select_from(Site)) or 0
+    else:
+        site_count = (
+            db.scalar(
+                select(func.count(func.distinct(Subnet.site_id))).where(
+                    Subnet.status == "active",
+                    Subnet.department_id == department_id,
+                )
+            )
+            or 0
+        )
 
-    status_rows = db.execute(
-        select(IpAddress.status, func.count()).group_by(IpAddress.status)
-    ).all()
+    subnet_count_stmt = select(func.count()).select_from(Subnet).where(Subnet.status == "active")
+    if department_id is not None:
+        subnet_count_stmt = subnet_count_stmt.where(Subnet.department_id == department_id)
+    subnet_count = db.scalar(subnet_count_stmt) or 0
+
+    status_stmt = select(IpAddress.status, func.count()).group_by(IpAddress.status)
+    if department_id is not None:
+        status_stmt = status_stmt.join(Subnet).where(Subnet.department_id == department_id)
+    status_rows = db.execute(status_stmt).all()
     counts = {s: n for s, n in status_rows}
     total = sum(counts.values())
     free = counts.get("free", 0)
@@ -212,27 +227,31 @@ def dashboard_out(db: Session) -> DashboardOut:
     reserved = counts.get("reserved", 0)
     disabled = counts.get("disabled", 0)
 
-    open_conflicts = (
-        db.scalar(select(func.count()).select_from(Conflict).where(Conflict.status == "open")) or 0
-    )
+    conflict_stmt = select(func.count()).select_from(Conflict).where(Conflict.status == "open")
+    if department_id is not None:
+        conflict_stmt = (
+            conflict_stmt.join(IpAddress, Conflict.ip_address_id == IpAddress.id)
+            .join(Subnet, IpAddress.subnet_id == Subnet.id)
+            .where(Subnet.department_id == department_id)
+        )
+    open_conflicts = db.scalar(conflict_stmt) or 0
 
     now = datetime.now(UTC).date()
     soon = now + timedelta(days=30)
-    expiring = (
-        db.scalar(
-            select(func.count())
-            .select_from(IpAddress)
-            .where(
-                IpAddress.status == "allocated",
-                IpAddress.expire_at.is_not(None),
-                IpAddress.expire_at >= now,
-                IpAddress.expire_at <= soon,
-            )
-        )
-        or 0
+    expiring_stmt = select(func.count()).select_from(IpAddress).where(
+        IpAddress.status == "allocated",
+        IpAddress.expire_at.is_not(None),
+        IpAddress.expire_at >= now,
+        IpAddress.expire_at <= soon,
     )
+    if department_id is not None:
+        expiring_stmt = expiring_stmt.join(Subnet).where(Subnet.department_id == department_id)
+    expiring = db.scalar(expiring_stmt) or 0
 
-    subnets = list(db.scalars(select(Subnet).where(Subnet.status == "active")).all())
+    subnet_stmt = select(Subnet).where(Subnet.status == "active")
+    if department_id is not None:
+        subnet_stmt = subnet_stmt.where(Subnet.department_id == department_id)
+    subnets = list(db.scalars(subnet_stmt).all())
     stats_map = batch_subnet_stats(db, [s.id for s in subnets])
     top = [
         {
@@ -244,7 +263,14 @@ def dashboard_out(db: Session) -> DashboardOut:
     ]
     top.sort(key=lambda x: x["utilization"], reverse=True)
 
-    logs = db.scalars(select(AllocationLog).order_by(AllocationLog.id.desc()).limit(8)).all()
+    logs_stmt = select(AllocationLog)
+    if department_id is not None:
+        logs_stmt = (
+            logs_stmt.join(IpAddress, AllocationLog.ip_address_id == IpAddress.id)
+            .join(Subnet, IpAddress.subnet_id == Subnet.id)
+            .where(Subnet.department_id == department_id)
+        )
+    logs = db.scalars(logs_stmt.order_by(AllocationLog.id.desc()).limit(8)).all()
 
     return DashboardOut(
         site_count=site_count,

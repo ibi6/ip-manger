@@ -46,14 +46,13 @@ def _csv_response(filename: str, rows: list[list[str]]) -> StreamingResponse:
 @router.get("/export/subnets")
 def export_subnets(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> StreamingResponse:
+    stmt = select(Subnet).options(joinedload(Subnet.site), joinedload(Subnet.department))
+    if user.role == "dept_user":
+        stmt = stmt.where(Subnet.department_id == user.department_id)
     subnets = (
-        db.scalars(
-            select(Subnet)
-            .options(joinedload(Subnet.site), joinedload(Subnet.department))
-            .order_by(Subnet.id)
-        )
+        db.scalars(stmt.order_by(Subnet.id))
         .unique()
         .all()
     )
@@ -95,7 +94,7 @@ def export_subnets(
 def export_ips(
     subnet_id: int | None = None,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> StreamingResponse:
     stmt = (
         select(IpAddress)
@@ -108,6 +107,8 @@ def export_ips(
     )
     if subnet_id is not None:
         stmt = stmt.where(IpAddress.subnet_id == subnet_id)
+    if user.role == "dept_user":
+        stmt = stmt.join(Subnet).where(Subnet.department_id == user.department_id)
     ips = db.scalars(stmt).unique().all()
     rows: list[list[str]] = [
         [
