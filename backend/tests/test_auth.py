@@ -1,3 +1,6 @@
+import pytest
+
+from app.core.security import decode_token
 from tests.conftest import auth_header
 
 
@@ -5,6 +8,26 @@ def test_login_ok(client):
     r = client.post("/api/v1/auth/login", json={"username": "admin", "password": "ChangeMe123!"})
     assert r.status_code == 200
     assert "access_token" in r.json()
+
+
+def test_login_token_has_traceable_identity(client):
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"username": "admin", "password": "ChangeMe123!"},
+    )
+
+    payload = decode_token(response.json()["access_token"])
+
+    assert payload["sub"] == "admin"
+    assert isinstance(payload["ver"], int)
+    assert isinstance(payload["iat"], int)
+    assert isinstance(payload["jti"], str)
+    assert len(payload["jti"]) >= 16
+
+
+def test_decode_rejects_damaged_token():
+    with pytest.raises(ValueError, match="invalid token"):
+        decode_token("not-a-jwt")
 
 
 def test_login_bad_password(client):

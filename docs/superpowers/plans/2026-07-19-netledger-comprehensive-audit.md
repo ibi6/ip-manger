@@ -31,7 +31,7 @@
 - Consumes: `get_secret_key()`, `Settings.algorithm`, JWT `sub`/`exp`/`ver` 载荷。
 - Produces: `create_access_token(subject, extra) -> str` 与 `decode_token(token) -> dict[str, Any]`，签名和异常契约保持不变。
 
-- [ ] **Step 1: 增加 JWT 兼容测试**
+- [x] **Step 1: 增加 JWT 兼容测试**
 
 在 `backend/tests/test_auth.py` 增加测试，断言登录 Token 可被 `decode_token` 解码，`sub`、`ver` 与登录用户一致，损坏 Token 抛出 `ValueError`。
 
@@ -51,13 +51,13 @@ def test_decode_rejects_damaged_token():
         decode_token("not-a-jwt")
 ```
 
-- [ ] **Step 2: 运行 JWT 测试确认当前契约**
+- [x] **Step 2: 运行 JWT 测试确认当前契约**
 
 Run: `backend\.venv\Scripts\python.exe -m pytest tests/test_auth.py -q`
 
 Expected: 现有实现通过 round-trip；损坏 Token 由统一 `ValueError` 契约处理。
 
-- [ ] **Step 3: 最小化升级受影响依赖**
+- [x] **Step 3: 最小化升级受影响依赖**
 
 将生产依赖锁定为：
 
@@ -70,7 +70,7 @@ python-multipart==0.0.32
 
 删除 `python-jose[cryptography]`，保留其余依赖版本不变。这样移除无修复 `ecdsa` 及旧 `pyasn1` 依赖，同时满足 `pip-audit` 报告的 Starlette 和 multipart 修复版本。
 
-- [ ] **Step 4: 将 JWT 实现切换到 PyJWT**
+- [x] **Step 4: 将 JWT 实现切换到 PyJWT**
 
 在 `backend/app/core/security.py` 使用：
 
@@ -89,7 +89,7 @@ def decode_token(token: str) -> dict[str, Any]:
 
 `create_access_token` 继续使用 `jwt.encode(payload, key, algorithm=...)`，不改变 API 返回格式。
 
-- [ ] **Step 5: 安装并验证依赖安全**
+- [x] **Step 5: 安装并验证依赖安全**
 
 Run:
 

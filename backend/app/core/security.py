@@ -1,7 +1,8 @@
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 
 from app.core.config import get_secret_key, get_settings
@@ -36,8 +37,14 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(subject: str, extra: dict[str, Any] | None = None) -> str:
     settings = get_settings()
-    expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload: dict[str, Any] = {"sub": subject, "exp": expire}
+    issued_at = datetime.now(UTC)
+    expire = issued_at + timedelta(minutes=settings.access_token_expire_minutes)
+    payload: dict[str, Any] = {
+        "sub": subject,
+        "iat": issued_at,
+        "exp": expire,
+        "jti": secrets.token_urlsafe(18),
+    }
     if extra:
         payload.update(extra)
     return jwt.encode(payload, get_secret_key(), algorithm=settings.algorithm)
@@ -47,5 +54,5 @@ def decode_token(token: str) -> dict[str, Any]:
     settings = get_settings()
     try:
         return jwt.decode(token, get_secret_key(), algorithms=[settings.algorithm])
-    except JWTError as exc:
+    except jwt.InvalidTokenError as exc:
         raise ValueError("invalid token") from exc
