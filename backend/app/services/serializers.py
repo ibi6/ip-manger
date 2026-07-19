@@ -238,11 +238,15 @@ def dashboard_out(db: Session, user: User) -> DashboardOut:
 
     now = datetime.now(UTC).date()
     soon = now + timedelta(days=30)
-    expiring_stmt = select(func.count()).select_from(IpAddress).where(
-        IpAddress.status == "allocated",
-        IpAddress.expire_at.is_not(None),
-        IpAddress.expire_at >= now,
-        IpAddress.expire_at <= soon,
+    expiring_stmt = (
+        select(func.count())
+        .select_from(IpAddress)
+        .where(
+            IpAddress.status == "allocated",
+            IpAddress.expire_at.is_not(None),
+            IpAddress.expire_at >= now,
+            IpAddress.expire_at <= soon,
+        )
     )
     if department_id is not None:
         expiring_stmt = expiring_stmt.join(Subnet).where(Subnet.department_id == department_id)
