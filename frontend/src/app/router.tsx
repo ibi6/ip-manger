@@ -14,7 +14,10 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { UsersPage } from '@/pages/UsersPage'
 import { DevicesPage } from '@/pages/DevicesPage'
 import { LogsPage } from '@/pages/LogsPage'
+import { ForbiddenPage } from '@/pages/ForbiddenPage'
+import { NotFoundPage } from '@/pages/NotFoundPage'
 import { LoadingBlock } from '@/components/ui/EmptyState'
+import { adminRouteAllowed } from '@/lib/ui-state'
 
 function Protected() {
   const { isAuthenticated, loading } = useAuth()
@@ -26,6 +29,12 @@ function Protected() {
     )
   }
   if (!isAuthenticated) return <Navigate to="/login" replace />
+  return <Outlet />
+}
+
+function AdminOnly() {
+  const { user } = useAuth()
+  if (!adminRouteAllowed(user?.role)) return <Navigate to="/forbidden" replace />
   return <Outlet />
 }
 
@@ -45,11 +54,14 @@ export function AppRouter() {
           <Route path="devices" element={<DevicesPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="conflicts" element={<ConflictsPage />} />
-          <Route path="users" element={<UsersPage />} />
+          <Route element={<AdminOnly />}>
+            <Route path="users" element={<UsersPage />} />
+          </Route>
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="forbidden" element={<ForbiddenPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

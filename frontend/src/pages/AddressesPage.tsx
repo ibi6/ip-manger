@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -11,11 +11,13 @@ import { api, ApiError, type ApiIp, type ApiSubnet } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import type { IpStatus } from '@/types'
 import { deviceTypeLabel } from '@/lib/labels'
+import { releasableAddressIds, selectionState } from '@/lib/ui-state'
 
 export function AddressesPage() {
   const { canManageNetwork } = useAuth()
   const [params] = useSearchParams()
   const [q, setQ] = useState('')
+  const [appliedQ, setAppliedQ] = useState('')
   const [subnetId, setSubnetId] = useState(params.get('subnet') ?? 'all')
   const [status, setStatus] = useState<'all' | IpStatus>('all')
   const [subnets, setSubnets] = useState<ApiSubnet[]>([])
@@ -27,8 +29,11 @@ export function AddressesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
+  const requestIdRef = useRef(0)
+  const selectAllRef = useRef<HTMLInputElement>(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current
     setLoading(true)
     setError('')
     try {
@@ -37,39 +42,56 @@ export function AddressesPage() {
         api.ipsPage({
           subnet_id: subnetId === 'all' ? undefined : Number(subnetId),
           status: status === 'all' ? undefined : status,
-          q: q || undefined,
+          q: appliedQ || undefined,
           page,
           page_size: pageSize,
         }),
       ])
+      if (requestId !== requestIdRef.current) return
       setSubnets(subs)
       setRows(pageData.items)
       setTotal(pageData.total)
       setSelected([])
     } catch (e) {
+      if (requestId !== requestIdRef.current) return
       setError(e instanceof Error ? e.message : '加载失败')
     } finally {
-      setLoading(false)
+      if (requestId === requestIdRef.current) setLoading(false)
     }
-  }
+  }, [appliedQ, page, status, subnetId])
 
   useEffect(() => {
     void load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subnetId, status, page])
+    return () => {
+      requestIdRef.current += 1
+    }
+  }, [load])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const releasableIds = releasableAddressIds(rows)
+  const selectAllState = selectionState(selected, releasableIds)
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = selectAllState.indeterminate
+    }
+  }, [selectAllState.indeterminate])
 
   const toggle = (id: number) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   const toggleAll = () => {
-    const releasable = rows
-      .filter((ip) => ['allocated', 'reserved', 'disabled'].includes(ip.status) && !ip.is_network_or_broadcast)
-      .map((ip) => ip.id)
-    if (selected.length === releasable.length) setSelected([])
-    else setSelected(releasable)
+    if (selectAllState.checked) {
+      setSelected((current) => current.filter((id) => !releasableIds.includes(id)))
+    } else {
+      setSelected((current) => [...new Set([...current, ...releasableIds])])
+    }
+  }
+
+  const applySearch = () => {
+    setPage(1)
+    setAppliedQ(q.trim())
   }
 
   const onBatchRelease = async () => {
@@ -133,8 +155,7 @@ export function AddressesPage() {
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  setPage(1)
-                  void load()
+                  applySearch()
                 }
               }}
             />
@@ -172,8 +193,7 @@ export function AddressesPage() {
             size="sm"
             variant="outline"
             onClick={() => {
-              setPage(1)
-              void load()
+              applySearch()
             }}
           >
             查询
@@ -196,7 +216,15 @@ export function AddressesPage() {
                   <tr>
                     {canManageNetwork ? (
                       <th className="px-3 py-3">
-                        <input type="checkbox" onChange={toggleAll} checked={selected.length > 0} />
+                        <input
+                          ref={selectAllRef}
+                          type="checkbox"
+                          className="h-4 w-4 accent-teal-600"
+                          aria-label="选择本页全部可回收地址"
+                          onChange={toggleAll}
+                          checked={selectAllState.checked}
+                          disabled={releasableIds.length === 0}
+                        />
                       </th>
                     ) : null}
                     <th className="px-4 py-3 font-medium">地址</th>
@@ -214,6 +242,8 @@ export function AddressesPage() {
                         <td className="px-3 py-3">
                           <input
                             type="checkbox"
+                            className="h-4 w-4 accent-teal-600"
+                            aria-label={`选择地址 ${ip.address}`}
                             disabled={
                               ip.is_network_or_broadcast ||
                               !['allocated', 'reserved', 'disabled'].includes(ip.status)

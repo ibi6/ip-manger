@@ -346,27 +346,27 @@ Expected: 测试、oxlint、TypeScript 与 Vite 构建通过。
 **Interfaces:**
 - Produces: `/users` 非管理员显示明确 403 页面；未知 URL 显示 404 并提供返回工作台；新建子网页面有站点加载/失败/空状态；搜索总从第 1 页执行。
 
-- [ ] **Step 1: 增加管理员路由守卫**
+- [x] **Step 1: 增加管理员路由守卫**
 
 在路由层新增 `AdminOnly`，从 `useAuth().canAdmin` 判断；无权限时渲染 `ForbiddenPage`，后端 403 仍为最终安全边界。
 
-- [ ] **Step 2: 增加 403/404 页面**
+- [x] **Step 2: 增加 403/404 页面**
 
 复用 `Card`、`Button`、lucide-react 图标与现有色板，包含清晰标题、说明和返回工作台按钮；不增加依赖。
 
-- [ ] **Step 3: 修复子网表单异步状态**
+- [x] **Step 3: 修复子网表单异步状态**
 
 `SubnetFormPage` 捕获 `api.sites()` 失败并显示 `ErrorBlock`；加载时显示 `LoadingBlock`；无站点时提示先创建站点并禁用提交；组件卸载后不更新状态。
 
-- [ ] **Step 4: 修复地址搜索页码竞态**
+- [x] **Step 4: 修复地址搜索页码竞态**
 
 让 `load` 接收明确的 `targetPage`，搜索按钮和 Enter 调用 `load(1)`；筛选变更由 effect 使用当前 page 加载，避免 `setPage(1)` 后仍请求旧页。
 
-- [ ] **Step 5: 修复批量选择可访问状态**
+- [x] **Step 5: 修复批量选择可访问状态**
 
 表头复选框仅在本页全部可回收项选中时 `checked=true`，部分选择使用 `indeterminate=true`，并提供 `aria-label`。
 
-- [ ] **Step 6: 执行 UI 静态门禁**
+- [x] **Step 6: 执行 UI 静态门禁**
 
 Run: `npm test -- --run && npm run lint && npm run build`（工作目录 `frontend`）
 
